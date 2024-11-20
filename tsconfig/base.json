@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+      "target": "ES2017",
+      "module": "esnext",
+      "strict": true,
+      "jsx": "react",
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "baseUrl": ".",
+      "paths": {
+          "@/*": [
+              "../../*"
+          ]
+      }
+  },
+  "include": [
+      "../../**/*"
+  ],
+  "exclude": [
+      "node_modules"
+  ]
+}
