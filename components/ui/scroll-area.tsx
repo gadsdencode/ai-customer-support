@@ -1,27 +1,46 @@
-"use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// scroll-area.tsx
+"use client";
 
-import * as React from "react"
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
-
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import { cn } from "@/lib/utils";
 
 const ScrollArea = React.forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
+  React.ElementRef<typeof ScrollAreaPrimitive.Viewport>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
-  <ScrollAreaPrimitive.Root
-    ref={ref}
-    className={cn("relative overflow-hidden", className)}
-    {...props}
-  >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
-      {children}
-    </ScrollAreaPrimitive.Viewport>
-    <ScrollBar />
-    <ScrollAreaPrimitive.Corner />
-  </ScrollAreaPrimitive.Root>
-))
-ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
+>(({ className, children, ...props }, ref) => {
+  // Create a stable ref that won't cause re-renders
+  const stableRef = React.useRef(null);
+  
+  // Use callback ref to handle ref changes safely
+  const setRefs = React.useCallback((element: any) => {
+    stableRef.current = element;
+    // Handle both function and object refs
+    if (typeof ref === 'function') {
+      ref(element);
+    } else if (ref) {
+      ref.current = element;
+    }
+  }, [ref]);
+
+  return (
+    <ScrollAreaPrimitive.Root
+      className={cn("relative overflow-hidden", className)}
+      {...props}
+    >
+      <ScrollAreaPrimitive.Viewport
+        ref={setRefs}
+        className="h-full w-full rounded-[inherit]"
+      >
+        {children}
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar />
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
+  );
+});
+ScrollArea.displayName = "ScrollArea";
 
 const ScrollBar = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
@@ -42,7 +61,7 @@ const ScrollBar = React.forwardRef<
   >
     <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
-))
-ScrollBar.displayName = ScrollAreaPrimitive.ScrollAreaScrollbar.displayName
+));
+ScrollBar.displayName = "ScrollBar";
 
-export { ScrollArea, ScrollBar }
+export { ScrollArea, ScrollBar };
