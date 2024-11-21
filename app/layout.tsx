@@ -6,8 +6,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
 
-import { CopilotFeaturesProvider } from "./providers/CopilotFeaturesProvider";
-import { InteleosContextProvider } from "./contexts/InteleosContext";
+import { CopilotFeaturesProvider } from "@/app/providers/CopilotFeaturesProvider";
+import { InteleosContextProvider } from "@/app/contexts/InteleosContext";
 import { Toaster } from "@/components/ui/toaster"
 
 const geistSans = localFont({
