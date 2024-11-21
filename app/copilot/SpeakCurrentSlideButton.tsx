@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { ActionButton } from "./ActionButton";
-import { SpeakerWaveIcon } from "@heroicons/react/24/outline";
-import { resetGlobalAudio, speak } from "../../utils/globalAudio";
+import { FcSpeaker } from "react-icons/fc";
+import { resetGlobalAudio, speak } from "../utils/globalAudio";
 
 interface SpeakCurrentSlideButtonProps {
   spokenNarration: string;
@@ -15,7 +15,7 @@ export function SpeakCurrentSlideButton({
   const [isSpeaking, setIsSpeaking] = useState(false);
   return (
     <ActionButton inProgress={isSpeaking}>
-      <SpeakerWaveIcon
+      <FcSpeaker
         className="h-5 w-5"
         onClick={async () => {
           resetGlobalAudio();

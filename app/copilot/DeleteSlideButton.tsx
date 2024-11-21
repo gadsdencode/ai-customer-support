@@ -1,6 +1,7 @@
-import { SlideModel } from "../../types";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { SlideModel } from "../types/copilot";
 import { ActionButton } from "./ActionButton";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { FcFullTrash } from "react-icons/fc";
 
 interface DeleteSlideButtonProps {
   currentSlideIndex: number;
@@ -27,7 +28,7 @@ export function DeleteSlideButton({
         setCurrentSlideIndex((i) => 0);
       }}
     >
-      <TrashIcon className="h-5 w-5" />
+      <FcFullTrash className="h-5 w-5" />
     </ActionButton>
   );
 }

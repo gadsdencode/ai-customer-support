@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // /config/copilotReadableConfigs.ts
-import { ReadableConfig } from '@/types/copilot';
+import { ReadableConfig } from '@/app/types/copilot';
+import { ExtendedCopilotContextParams } from '@/app/types/copilot';
+//import useAppendSlide from '@/app/copilot/useAppendSlide';
+//import useUpdateSlide from '@/app/copilot/useUpdateSlide';
+//import { useGenerateChartAction } from '@/hooks/useGenerateChartAction';
+//import { useGenerateSpreadsheetAction } from '@/hooks/useGenerateSpreadsheetAction';
+//import { useGeneratePresentationAction } from '@/hooks/useGeneratePresentationAction';
 
 export const createReadableConfigs = (
   contextValues: ExtendedCopilotContextParams,
@@ -8,16 +14,16 @@ export const createReadableConfigs = (
 ): ReadableConfig[] => [
   {
     description: "Inteleos company information and CX data",
-    value: contextValues.documentContent,
+    value: contextValues.addDocumentContext,
     categories: ['documentContext']
   },
   {
     description: "Application context information and tools",
     value: {
-      sendEmail: contextValues.sendEmailAction,
+      sendEmail: contextValues.sendEmail,
       useAppendSlide: contextValues.useAppendSlide,
       useUpdateSlide: contextValues.useUpdateSlide,
-      useGenerateChartAction: contextValues.generateChartAction,
+      useGenerateChartAction: contextValues.useGenerateChartAction,
       useGenerateSpreadsheetAction: contextValues.useGenerateSpreadsheetAction,
       useGeneratePresentationAction: contextValues.useGeneratePresentationAction,
       ...contextValues.copilotComponents,
@@ -44,7 +50,7 @@ export const createReadableConfigs = (
   },
   {
     description: "Poll component rendering",
-    value: contextValues.PollComponent,
+    value: contextValues.pollComponent,
     categories: ['pollAction']
   },
   {
@@ -64,7 +70,7 @@ export const createReadableConfigs = (
   },
   {
     description: "Email functionality",
-    value: contextValues.sendEmailAction,
+    value: contextValues.sendEmail,
     categories: ['appContext']
   },
   {
@@ -104,17 +110,17 @@ export const createReadableConfigs = (
   },
   {
     description: "Spreadsheet context",
-    value: contextValues.suggestionsContext.generateSpreadsheet,
+    value: contextValues.generateSpreadsheet,
     categories: ['spreadsheetAction']
   },
   {
     description: "Presentation context",
-    value: contextValues.suggestionsContext.generatePresentation,
+    value: contextValues.generatePresentation,
     categories: ['presentationAction']
   },
   {
     description: "Slide speaking functionality context",
-    value: contextValues.suggestionsContext.SpeakCurrentSlideButton,
+    value: contextValues.SpeakCurrentSlideButton,
     categories: ['slideAction']
   },
   {

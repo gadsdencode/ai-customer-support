@@ -1,7 +1,7 @@
 // /app/copilot/PowerPointActions.tsx
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { usePowerPointState, Slide } from '../hooks/usePowerPointState';
+import { usePowerPointState, Slide } from '../../hooks/usePowerPointState';
 
 interface PowerPointActionsProps {
   onGenerateSlide: () => Promise<Slide>;

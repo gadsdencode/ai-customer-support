@@ -1,7 +1,7 @@
 import { CopilotContextParams, CopilotTask } from "@copilotkit/react-core";
 import { useState } from "react";
 import { ActionButton } from "./ActionButton";
-import { SparklesIcon } from "@heroicons/react/24/outline";
+import { FcMindMap } from "react-icons/fc";
 
 interface GenerateSlideButtonProps {
   context: CopilotContextParams;
@@ -14,7 +14,7 @@ export function GenerateSlideButton({ context }: GenerateSlideButtonProps) {
       inProgress={isGeneratingSlide}
       onClick={async () => {
         try {
-          let slideContent = prompt("What should the new slide be about?");
+          const slideContent = prompt("What should the new slide be about?");
           if (slideContent === null) {
             return;
           }
@@ -31,7 +31,7 @@ export function GenerateSlideButton({ context }: GenerateSlideButtonProps) {
         }
       }}
     >
-      <SparklesIcon className={"h-5 w-5"} />
+      <FcMindMap className={"h-5 w-5"} />
     </ActionButton>
   );
 }

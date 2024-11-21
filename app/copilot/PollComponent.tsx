@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /app/copilot/PollComponent.tsx
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { useCopilotAction } from '@copilotkit/react-core';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/app/contexts/AuthContext';
+import useAuth from '@/app/contexts/useAuth';
 
 // Initialize Supabase client
 const supabase: SupabaseClient = createClient(
@@ -272,5 +273,7 @@ const PollComponent: React.FC<PollComponentProps> = React.memo(({ pollId }) => {
     </ErrorBoundary>
   );
 });
+
+PollComponent.displayName = 'PollComponent';
 
 export default PollComponent;

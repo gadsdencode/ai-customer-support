@@ -4,8 +4,8 @@
 
 import { useCopilotAction } from '@copilotkit/react-core'; // Replace with the actual path
 import pptxgen from 'pptxgenjs'; // Ensure pptxgenjs is installed: npm install pptxgenjs
-import SlidePreviewCarousel from '../app/copilot/SlidePreviewCarousel'; // Replace with the actual path
-import logger from '../utils/logger'; // Replace with your logging utility
+import { SlidePreviewCarousel } from '../app/copilot/SlidePreviewCarousel'; // Replace with the actual path
+import logger from '../app/utils/logger'; // Replace with your logging utility
 
 // Define the structure of a single slide
 type SlideData = {
@@ -116,23 +116,26 @@ type SlideData = {
             throw new Error("Failed to generate presentation");
           }
         },
-        render: ({ status, args }: { status: string; args: any }) => {
+        render: ({ status, args }) => {
           if (status === "complete") {
             return (
-              <div>
+              <div key="presentation-complete">
                 <div>
                   <p className="text-green-500 text-center text-lg font-bold border-2 border-green-500 p-2 rounded-md m-2 bg-green-500/20">
                     Presentation generated successfully!
                   </p>
                 </div>
                 <SlidePreviewCarousel
-                  slides={args.data.slides}
+                  slides={args.data.slides.map(slide => ({
+                    ...slide,
+                    content: slide.content.join(' ')
+                  }))}
                   backgroundImageUrl={'/images/APCA_transparent.png'}
                 />
               </div>
-            );
+            ) as React.ReactElement;
           }
-          return null;
+          return "" as const;
         },
       },
       [] // Empty dependencies array ensures the action is only created once

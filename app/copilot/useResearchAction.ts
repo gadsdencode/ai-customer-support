@@ -1,7 +1,7 @@
 // /app/copilot/useResearchAction.ts
 
 import { useCopilotAction } from "@copilotkit/react-core";
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { research } from '@/app/copilot/tavily';
 
 const useResearchAction = () => {

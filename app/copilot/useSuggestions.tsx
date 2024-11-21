@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /app/hooks/useSuggestions.ts
 
 import { useState, useEffect, useRef } from 'react';
 import { ExtendedCopilotContextParams } from '@/app/types/copilot';
 import { CopilotChatSuggestionConfiguration } from '@copilotkit/react-core';
-import logger from '@/utils/logger';
+import logger from '../utils/logger';
 
 export const useSuggestions = (context: ExtendedCopilotContextParams) => {
   const [suggestions, setSuggestions] = useState<{ title: string; message: string }[]>([]);

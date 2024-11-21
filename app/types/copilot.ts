@@ -27,8 +27,16 @@ import { Parameter, MappedParameterTypes } from '@copilotkit/shared';
 import { useAISuggestions } from '@/app/copilot/useAISuggestions';
 import useCopilotPollAction from '@/app/copilot/useCopilotPollAction';
 import PollComponent from '@/app/copilot/PollComponent';
-import { useMakeCopilotReadable } from '@/app/copilot/useCopilotReadable';
+import { useMakeCopilotReadable } from '@/hooks/useMakeCopilotReadable';
 import { FrontendAction } from '@/app/contexts/InteleosContext';
+import useAppendSlide from '@/app/copilot/useAppendSlide';
+import { useGenerateChartAction } from '@/hooks/useGenerateChartAction';
+import { useGenerateSpreadsheetAction } from '@/hooks/useGenerateSpreadsheetAction';
+import { useGeneratePresentationAction } from '@/hooks/useGeneratePresentationAction';
+import useUpdateSlide from '../copilot/useUpdateSlide';
+import useScheduleAppointmentAction from '../copilot/useScheduleAppointmentAction';
+import useResearchAction from '../copilot/useResearchAction';
+
 export interface ReadableConfig {
     description: string;
     value: any;
@@ -101,6 +109,8 @@ type SendEmailFunction = (params: EmailParams) => Promise<void>;
 type InChatRenderFunction = (args: any) => JSX.Element;
 
 export interface ExtendedCopilotContextParams extends Omit<CopilotContextParams, 'messages' | 'setMessages' | 'chatComponentsCache' | 'actions' | 'coAgentStateRenders' | 'generateSpreadsheet' | 'generatePresentation'> {
+  appendSlide: typeof useAppendSlide;
+  useAppendSlide: typeof useAppendSlide;
   actions: Record<string, FrontendAction<any>>;
   coAgentStateRenders: Record<string, any>;
   pollAction: typeof useCopilotPollAction;
@@ -178,7 +188,13 @@ export interface ExtendedCopilotContextParams extends Omit<CopilotContextParams,
   prevSlide: () => void;
   initialSlides: SlideData[];
   setInitialSlides: React.Dispatch<React.SetStateAction<SlideData[]>>;
-  useMakeCopilotReadable: typeof useMakeCopilotReadable;
+  useMakeCopilotReadable: (options: CopilotReadableOptions) => ReturnType<typeof useMakeCopilotReadable>;
+  useGenerateChartAction: typeof useGenerateChartAction;
+  useGenerateSpreadsheetAction: typeof useGenerateSpreadsheetAction;
+  useGeneratePresentationAction: typeof useGeneratePresentationAction;
+  useUpdateSlide: typeof useUpdateSlide;
+  useScheduleAppointmentAction: typeof useScheduleAppointmentAction;
+  useResearchAction: typeof useResearchAction;
 }
 
 export type { SendEmailFunction, InChatRenderFunction };

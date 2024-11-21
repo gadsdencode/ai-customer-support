@@ -3,7 +3,7 @@
 // /app/contexts/CopilotContext.tsx
 'use client'
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { ExtendedCopilotContextParams, SlideData } from '../types/copilot';
+import { CopilotReadableOptions, ExtendedCopilotContextParams, SlideData } from '../types/copilot';
 import { useToast } from '../../hooks/use-toast';
 import { supabase } from '../utils/supabase/client';
 import useGenerateChartAction from '../copilot/useGenerateChart';
@@ -39,7 +39,7 @@ import PollComponent from '../copilot/PollComponent';
 import { useMakeCopilotReadable } from '../../hooks/useMakeCopilotReadable';
 import { useGenerateSpreadsheetAction } from '../../hooks/useGenerateSpreadsheetAction';
 import { useGeneratePresentationAction } from '../../hooks/useGeneratePresentationAction';
-
+import { SupabaseError, DataNotFoundError } from '../utils/error-classes/errorClasses';
 type PollActionType = ReturnType<typeof useCopilotPollAction>;
 type SpreadsheetData = {
   headers: string[];
@@ -71,10 +71,10 @@ export interface FrontendAction<T> {
 
 type FrontendActionType = ReturnType<typeof useCopilotAction>;
 
-export const CopilotAuthContext = createContext<ExtendedCopilotContextParams | undefined>(undefined);
+export const InteleosContext = createContext<ExtendedCopilotContextParams | undefined>(undefined);
 
-export const CopilotAuthContextProvider: React.FC<CopilotContextProviderProps> = ({ children }) => {
-  const [documentContent, setDocumentContent] = useState('');
+export const InteleosContextProvider: React.FC<CopilotContextProviderProps> = ({ children }) => {
+  const [documentContent, setDocumentContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [chatInstructions, setChatInstructions] = useState('');
   const { toast } = useToast();
@@ -102,22 +102,22 @@ export const CopilotAuthContextProvider: React.FC<CopilotContextProviderProps> =
 
   useEffect(() => {
     const fetchDocumentContent = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('inteleos-context-document')
-          .select('content')
-          .single();
-        if (error) throw new Error(error.message);
-        logger.info('Fetched document content:', data.content);
-        setDocumentContent(data.content);
-        setIsLoading(false);
-      } catch (error) {
-        logger.error('Error fetching document content:', error);
-        setIsLoading(false);
-      }
+        try {
+            const { data, error } = await supabase
+                .from('inteleos-context-document')
+                .select('content');
+
+            if (error) throw new SupabaseError(error.message);
+            if (!data?.length) throw new DataNotFoundError('No document content found');
+
+            // Join array of content into single string
+            setDocumentContent(data.map(row => row.content).join('\n'));
+        } catch (error) {
+            logger.error('Error fetching document content:', error);
+        }
     };
     fetchDocumentContent();
-  }, [toast]);
+}, [toast]);
 
   const document: DocumentPointer = {
     id: "2",
@@ -311,6 +311,15 @@ export const CopilotAuthContextProvider: React.FC<CopilotContextProviderProps> =
     slides,
     setSlides,
     addSlide,
+    useCopilotPollAction,
+    useAppendSlide,
+    useUpdateSlide,
+    useGenerateChartAction,
+    useGenerateSpreadsheetAction,
+    useGeneratePresentationAction,
+    useScheduleAppointmentAction,
+    useResearchAction,
+    appendSlide: useAppendSlide,
   };
 
   // Register the schedule appointment action
@@ -336,19 +345,18 @@ export const CopilotAuthContextProvider: React.FC<CopilotContextProviderProps> =
   });
   // Add this to the CopilotAuthContextProvider
   useGenerateChartAction();
-  useMakeCopilotReadable();
 
   return (
-    <CopilotAuthContext.Provider value={suggestionsContext}>
+    <InteleosContext.Provider value={suggestionsContext}>
       {children}
-    </CopilotAuthContext.Provider>
+    </InteleosContext.Provider>
   );
 };
 
-export const useCopilotAuth = () => {
-  const context = useContext(CopilotAuthContext);
+export const useInteleos = () => {
+  const context = useContext(InteleosContext);
   if (context === undefined) {
-    throw new Error('useCopilotAuth must be used within a CopilotAuthContextProvider');
+    throw new Error('useInteleos must be used within a InteleosContextProvider');
   }
   return context;
 };

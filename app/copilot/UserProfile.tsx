@@ -1,6 +1,6 @@
-import { useAuth } from '@/app/contexts/AuthContext'
+import useAuth from '@/app/contexts/useAuth';
 import { useEffect, useState } from 'react'
-import { supabase } from '@/utils/supabase/supabaseClient'
+import { supabase } from '../utils/supabase/client'
 
 interface UserData {
   id: string

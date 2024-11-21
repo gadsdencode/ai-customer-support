@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { SlideModel } from "../../types";
+import { SlideModel } from "../types/copilot";
 import { useMemo } from "react";
 import { useCopilotContext } from "@copilotkit/react-core";
 import { SlideNumberIndicator } from "./SlideNumberIndicator";
@@ -7,7 +7,7 @@ import { GenerateSlideButton } from "./GenerateSlideButton";
 import { SpeakCurrentSlideButton } from "./SpeakCurrentSlideButton";
 import { DeleteSlideButton } from "./DeleteSlideButton";
 import { NavButton } from "./NavButton";
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { FcPrevious, FcNext } from "react-icons/fc";
 import { PerformResearchSwitch } from "./PerformResearchSwitch";
 import { AddSlideButton } from "./AddSlideButton";
 
@@ -46,7 +46,7 @@ export function Header({
           disabled={currentSlideIndex == 0}
           onClick={() => setCurrentSlideIndex((i) => i - 1)}
         >
-          <ChevronLeftIcon className="h-6 w-6" />
+          <FcPrevious className="h-6 w-6" />
         </NavButton>
 
         {/* Forward */}
@@ -54,7 +54,7 @@ export function Header({
           disabled={currentSlideIndex == slides.length - 1}
           onClick={() => setCurrentSlideIndex((i) => i + 1)}
         >
-          <ChevronRightIcon className="h-6 w-6" />
+          <FcNext className="h-6 w-6" />
         </NavButton>
 
         {/* Perform Research */}

@@ -15,10 +15,8 @@ export function CopilotText() {
           textareaPurpose: "Notes about a user's tax-related questions and concerns. Likely written in a colloquial style, but adjust as needed.",
           chatApiConfigs: {
             suggestionsApiConfig: {
-              forwardedParams: {
-                max_tokens: 20,
-                stop: [".", "?", "!"],
-              },
+              maxTokens: 20,
+              stop: [".", "?", "!"],
             },
           },
         }}

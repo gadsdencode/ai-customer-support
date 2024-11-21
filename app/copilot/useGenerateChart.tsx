@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import Chart from 'chart.js/auto';
 import { useCopilotAction } from "@copilotkit/react-core";
 import { useCopilotReadable } from "@copilotkit/react-core";

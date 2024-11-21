@@ -12,7 +12,7 @@ import { AddSlideButton } from './AddSlideButton';
 import { SpeakCurrentSlideButton } from './SpeakCurrentSlideButton';
 import { SlidePreview } from './SlidePreview';
 import { SlidePreviewCarousel } from './SlidePreviewCarousel';
-import { useSlideTransition } from '../hooks/useSlideTransition';
+import { useSlideTransition } from '../../hooks/useSlideTransition';
 import { VirtualizedThumbnails } from './VirtualizedThumbnails';
 import { SlideThumbnail } from './SlideThumbnail';
 import { useMakeCopilotReadable } from './useCopilotReadable';

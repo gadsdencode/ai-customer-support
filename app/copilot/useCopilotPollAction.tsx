@@ -4,7 +4,7 @@ import { useCopilotAction } from '@copilotkit/react-core';
 import { createClient } from '@supabase/supabase-js';
 import PollComponent from './PollComponent';
 import { generatePollWithAI } from './aiPollGenerator';
-import { useAuth } from '@/app/contexts/AuthContext'
+// import { useAuth } from '@/app/contexts/AuthContext'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '');
 
@@ -18,7 +18,7 @@ interface GeneratedPoll {
 }
 
 const useCopilotPollAction = () => {
-  const { user } = useAuth()
+  // const { user } = useAuth()
   return useCopilotAction({
     name: "createPoll",
     description: "Creates a new poll based on a given topic using AI-generated questions and answers",
@@ -65,7 +65,7 @@ const useCopilotPollAction = () => {
         return <p>Creating AI-generated poll...</p>;
       }
       if (status === 'complete' && result) {
-        return <PollComponent pollId={result} userId={user?.id ?? ''} />;
+        return <PollComponent pollId={result} userId={''} />;
       }
       return <></>;
     }

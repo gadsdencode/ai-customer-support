@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /app/copilot/SlidePreview.tsx
 
 import React, { useMemo, useEffect, useCallback } from 'react';

@@ -2,7 +2,7 @@
 
 "use client";
 import useUpdateSlide from "./useUpdateSlide";
-import { SlideModel } from "../../types";
+import { SlideModel } from "../types/copilot";
 
 export interface SlideProps {
   slide: SlideModel;

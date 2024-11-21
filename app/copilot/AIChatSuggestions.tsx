@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /app/copilot/AIChatSuggestions.tsx
 
 import React, { useEffect, useRef } from 'react';

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // /app/hooks/useAISuggestions.tsx
 
 import { useState, useCallback, useEffect } from 'react';

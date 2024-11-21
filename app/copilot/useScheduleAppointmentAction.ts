@@ -1,5 +1,5 @@
 import { useCopilotAction } from "@copilotkit/react-core";
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const useScheduleAppointmentAction = () => {
   const { toast } = useToast();

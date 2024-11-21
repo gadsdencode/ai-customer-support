@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // /app/copilot/SlidePreviewCarousel.tsx
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -5,8 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { SlidePreview } from './SlidePreview';
 import { Button } from '@/components/ui/button';
-import { PlayIcon, PauseIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { usePowerPointState } from '../hooks/usePowerPointState';
+import { PlayIcon, PauseIcon } from 'lucide-react';
+import { usePowerPointState } from '../../hooks/usePowerPointState';
 import { SlideData } from '../types/copilot';
 import { SlideThumbnail } from './SlideThumbnail';
 import { VirtualizedThumbnails } from './VirtualizedThumbnails';

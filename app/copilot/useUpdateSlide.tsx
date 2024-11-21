@@ -1,7 +1,7 @@
 // /app/copilot/useUpdateSlide.tsx
 
 import { useCopilotAction } from "@copilotkit/react-core";
-import { SlideModel } from "../../types";
+import { SlideModel } from "../types/copilot";
 import { SlidePreview } from "./SlidePreview";
 
 interface UpdateSlideParams {

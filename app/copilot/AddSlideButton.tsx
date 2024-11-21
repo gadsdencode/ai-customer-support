@@ -1,8 +1,8 @@
 // /app/copilot/AddSlideButton.tsx
 
-import { SlideModel } from "../../types";
+import { SlideModel } from "../types/copilot";
 import { ActionButton } from "./ActionButton";
-import { PlusCircleIcon } from "@heroicons/react/24/outline";
+import { FcPlus } from "react-icons/fc";
 
 interface AddSlideButtonProps {
   currentSlideIndex: number;
@@ -32,7 +32,7 @@ export function AddSlideButton({
         setCurrentSlideIndex((i) => i + 1);
       }}
     >
-      <PlusCircleIcon className="h-5 w-5" />
+      <FcPlus className="h-5 w-5" />
     </ActionButton>
   );
 }

@@ -7,6 +7,7 @@ import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
 
 import { CopilotFeaturesProvider } from "./providers/CopilotFeaturesProvider";
+import { InteleosContextProvider } from "./contexts/InteleosContext";
 import { Toaster } from "@/components/ui/toaster"
 
 const geistSans = localFont({
@@ -32,10 +33,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <CopilotKit runtimeUrl="/api/copilotkit"> 
+          <InteleosContextProvider>
           <CopilotFeaturesProvider>
             {children}
             <Toaster />
           </CopilotFeaturesProvider>
+          </InteleosContextProvider>
         </CopilotKit>
       </body>
     </html>
