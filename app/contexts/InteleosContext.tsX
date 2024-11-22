@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// /app/contexts/CopilotContext.tsx
+// /app/contexts/InteleosContext.tsx
 'use client'
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { CopilotReadableOptions, ExtendedCopilotContextParams, SlideData } from '../types/copilot';
