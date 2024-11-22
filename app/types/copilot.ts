@@ -28,7 +28,7 @@ import { useAISuggestions } from '@/app/copilot/useAISuggestions';
 import useCopilotPollAction from '@/app/copilot/useCopilotPollAction';
 import PollComponent from '@/app/copilot/PollComponent';
 import { useMakeCopilotReadable } from '@/hooks/useMakeCopilotReadable';
-import { FrontendAction } from '@/app/contexts/TempInteleosContext';
+import { FrontendAction } from '@/app/contexts/InteleosContext';
 import useAppendSlide from '@/app/copilot/useAppendSlide';
 import { useGenerateChartAction } from '@/hooks/useGenerateChartAction';
 import { useGenerateSpreadsheetAction } from '@/hooks/useGenerateSpreadsheetAction';
