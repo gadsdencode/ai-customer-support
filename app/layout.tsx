@@ -7,7 +7,7 @@ import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
 
 import { CopilotFeaturesProvider } from "./providers/CopilotFeaturesProvider";
-import { InteleosContextProvider } from "./contexts/InteleosContext";
+import { InteleosContextProvider } from "./contexts/TempInteleosContext";
 import { Toaster } from "@/components/ui/toaster"
 
 const geistSans = localFont({

@@ -6,7 +6,7 @@ import logger from '@/app/utils/logger';
 import { CopilotReadableError } from '@/app/utils/error-classes/errorClasses';
 import { useContext, useEffect } from 'react';
 // import { CopilotFeaturesContext } from '@/app/contexts/CopilotFeaturesContext';
-import { InteleosContext } from '@/app/contexts/InteleosContext';
+import { InteleosContext } from '@/app/contexts/TempInteleosContext';
 import { createReadableConfigs } from '@/app/configs/copilotReadableConfigs';
 import { ExtendedCopilotContextParams } from '@/app/types/copilot';
 import useAppendSlide from '@/app/copilot/useAppendSlide';
