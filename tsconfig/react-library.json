@@ -1,0 +1,36 @@
+{
+    "name": "ai-customer-support",
+    "version": "1.0.0",
+    "description": "A React component library",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": ["dist"],
+    "scripts": {
+      "build": "tsc -p tsconfig.json",
+      "clean": "rimraf dist",
+      "prepublishOnly": "npm run clean && npm run build"
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/yourusername/my-react-library.git"
+    },
+    "keywords": ["react", "component", "library"],
+    "author": "Your Name",
+    "license": "MIT",
+    "bugs": {
+      "url": "https://github.com/yourusername/my-react-library/issues"
+    },
+    "homepage": "https://github.com/yourusername/my-react-library#readme",
+    "peerDependencies": {
+      "react": "^18.0.0",
+      "react-dom": "^18.0.0"
+    },
+    "devDependencies": {
+      "typescript": "^5.0.0",
+      "rimraf": "^5.0.0",
+      "@types/react": "^18.0.0",
+      "@types/react-dom": "^18.0.0"
+    },
+    "dependencies": {}
+  }
+  

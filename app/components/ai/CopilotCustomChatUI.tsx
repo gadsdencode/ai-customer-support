@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // /app/components/ai/CopilotCustomChatUI.tsx
 
 "use client";
@@ -15,11 +16,22 @@ import { Input } from "@/components/ui/input";
 // import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Loader2, Trash2, RotateCcw } from "lucide-react";
+import { Loader2, Trash2, RotateCcw } from "lucide-react";
 import { gsap } from "gsap";
 import { motion, AnimatePresence } from "framer-motion";
 import ErrorBoundary from "@/app/components/errors/ErrorBoundary";
 import { useToast } from "@/hooks/use-toast";
+import { useExecuteAction } from "@/app/services/actionService";
+import { HumanApprovalModal } from "./HumanApprovalModal";
+// import { useRealtimeActions } from "@/hooks/useRealTimeActions";
+// import { useAgentActions } from "@/hooks/useAgentActions";
+import { useAgentUI } from "@/hooks/useAgentUI";
+// import { actionRequiresApproval } from "@/app/utils/actionUtils";
+import { ActionContext, ActionResult, AgentUIState } from "@/app/types/agent";
+import { ENDPOINTS } from "@/app/configs/endpoints";
+import { useRealtimeActions } from "@/hooks/useRealTimeActions";
+// import { RealtimeActionResponse } from "@/app/types/copilot";
+
 export function CopilotCustomChatUI() {
   const { toast } = useToast();
   const {
@@ -33,19 +45,183 @@ export function CopilotCustomChatUI() {
 
   const [inputValue, setInputValue] = useState("");
   const chatCardRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  // const inputRef = useRef<HTMLInputElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const [agentUIState, setAgentUIState] = useState<AgentUIState>({
+    currentView: 'default',
+    actions: [],
+    context: {}
+  });
+  const { isProcessing } = useRealtimeActions();
+ 
 
-  const sendMessage = useCallback(
-    (content: string) => {
-      if (content.trim()) {
-        appendMessage(new TextMessage({ content, role: Role.User }));
-        setInputValue("");
+  const executeAction = useExecuteAction();
+
+  const [needsApproval, setNeedsApproval] = useState(false);
+  const [pendingAction, setPendingAction] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { uiState, renderDynamicUI } = useAgentUI();
+  // const { handleRealtimeAction } = useRealtimeActions();
+
+  useEffect(() => {
+    if (needsApproval) {
+      setAgentUIState((prevState) => ({
+        ...prevState,
+        currentView: 'approval',
+      }));
+    } else if (isLoading) {
+      setAgentUIState({ currentView: 'thinking', actions: [], context: {} });
+    } else {
+      setAgentUIState({ currentView: 'default', actions: [], context: {} });
+    }
+  }, [needsApproval, isLoading]);
+  
+  
+  // Add action handling
+  const handleRealtimeAction = async (
+    actionName: string, 
+    parameters: Record<string, any>
+): Promise<ActionResult> => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000;
+    
+    const makeRequest = async (attempt: number = 1): Promise<ActionResult> => {
+        try {
+            if (!actionName) {
+                throw new Error('Action name is required');
+            }
+    
+            const requestOptions = {
+                method: 'POST',
+                credentials: 'include' as const,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Origin': window.location.origin,
+                },
+                body: JSON.stringify({
+                    action_name: actionName,
+                    parameters: parameters || {},
+                }),
+            };
+    
+            const response = await fetch(
+                `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
+                requestOptions
+            );
+    
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Error response from server:', errorData);
+                throw new Error(
+                    errorData.message || `Server responded with status: ${response.status}`
+                );
+            }
+    
+            const data = await response.json();
+            console.log('Success response from server:', data); // Add logging
+            return { 
+                success: true, 
+                data: {
+                    response: data.response,
+                    metadata: data.metadata
+                },
+                timestamp: new Date().toISOString()
+            };
+    
+        } catch (error) {
+            console.error('Error in handleRealtimeAction:', error); // Add logging
+            if (attempt < MAX_RETRIES) {
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * attempt));
+                return makeRequest(attempt + 1);
+            }
+            
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error occurred',
+                timestamp: new Date().toISOString()
+            };
+        }
+    };
+    
+    return makeRequest();
+};
+
+  
+
+  const sendMessageHandler = async (content: string) => {
+    if (!content?.trim()) return;
+  
+    try {
+      setAgentUIState(prev => ({
+        ...prev,
+        currentView: 'thinking'
+      }));
+  
+      // Create message with safe defaults
+      const message = new TextMessage({ 
+        content, 
+        role: Role.User,
+        id: `msg-${Date.now()}`,
+      });
+  
+      // Ensure visibleMessages is initialized
+      if (!Array.isArray(visibleMessages)) {
+        console.warn('visibleMessages is not initialized properly');
+        setMessages([message]);
+      } else {
+        appendMessage(message);
       }
-    },
-    [appendMessage]
-  );
+  
+      setInputValue("");
+  
+      const context: ActionContext = {
+        payload: { message: content },
+        type: "sendMessage"
+      };
+  
+      const result = await handleRealtimeAction("sendMessage", context);
+  
+      if (!result?.success) {
+        throw new Error(result?.error || 'Message sending failed');
+      }
+  
+      // Handle successful response
+      if (result.data) {
+        const responseMessage = new TextMessage({
+          content: result.data.response,
+          role: Role.Assistant,
+          id: `msg-${Date.now()}-response`,
+        });
+        appendMessage(responseMessage);
+      }
+  
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setAgentUIState(prev => ({
+        ...prev,
+        currentView: 'default'
+      }));
+    }
+  };
+  
+  // Add error handling utility
+  const handleError = (error: unknown) => {
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Unknown error occurred';
+  
+    console.error("Message send failed:", errorMessage);
+    
+    toast({
+      title: 'Communication Error',
+      description: `Failed to send message: ${errorMessage}`,
+      variant: 'destructive',
+      duration: 5000,
+    });
+  };
 
   // Memoize scroll handler
   const scrollToBottom = useCallback(() => {
@@ -106,9 +282,9 @@ export function CopilotCustomChatUI() {
         variant: 'default',
         duration: 2000,
       });
-      sendMessage(message);
+      sendMessageHandler(message);
     },
-    [sendMessage]
+    [sendMessageHandler]
   );
 
   const clearChatHandler = useCallback(async () => {
@@ -239,27 +415,20 @@ export function CopilotCustomChatUI() {
         </ErrorBoundary>
         <div className="flex items-center space-x-2 mt-4">
           <Input
-            ref={inputRef}
             value={inputValue}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setInputValue(e.target.value)
-            }
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-              if (e.key === "Enter") sendMessage(inputValue);
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isProcessing) {
+                e.preventDefault();
+                sendMessageHandler(inputValue);
+              }
             }}
-            placeholder="Type your message here..."
-            className="flex-grow bg-gray-700 text-white placeholder-gray-400 border-gray-600 focus:border-primary transition-all duration-300"
           />
           <Button
-            onClick={() => sendMessage(inputValue)}
-            disabled={isLoading || !inputValue.trim()}
-            className="bg-primary hover:bg-primary-dark transition-colors duration-300"
+            onClick={() => sendMessageHandler(inputValue)}
+            disabled={isProcessing || inputValue.trim() === ""}
           >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
           </Button>
         </div>
         <div className="flex justify-between mt-4">
@@ -292,6 +461,23 @@ export function CopilotCustomChatUI() {
               Stop
             </Button>
           )}
+          {needsApproval && (
+            <HumanApprovalModal
+              isOpen={needsApproval}
+              onClose={() => setNeedsApproval(false)}
+              onApprove={async () => {
+                await executeAction(pendingAction, agentUIState.context);
+                setNeedsApproval(false);
+                setPendingAction(null);
+              }}
+              onReject={() => {
+                setNeedsApproval(false);
+                setPendingAction(null);
+              }}
+              data={pendingAction}
+            />
+          )}
+          {renderDynamicUI()}
         </div>
       </CardContent>
     </Card>

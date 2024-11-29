@@ -63,7 +63,7 @@ export function CopilotFeaturesProvider({ children }: CopilotFeaturesProviderPro
   const greetUserHandler = useCallback(async () => {
     toast({
       title: `Hello, ${appState.user.name}!`,
-      description: 'Welcome Customer Support AI!',
+      description: 'Welcome to Customer Support AI!',
       variant: 'default',
       duration: 3500,
     });

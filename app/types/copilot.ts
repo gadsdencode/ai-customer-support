@@ -36,6 +36,40 @@ import { useGeneratePresentationAction } from '@/hooks/useGeneratePresentationAc
 import useUpdateSlide from '../copilot/useUpdateSlide';
 import useScheduleAppointmentAction from '../copilot/useScheduleAppointmentAction';
 import useResearchAction from '../copilot/useResearchAction';
+import { Role } from '@copilotkit/runtime-client-gql';
+
+// types.ts
+
+/*export interface CopilotAction {
+  name: string;
+  description: string;
+  addRemoteActionEndpoint?: (endpoint: { url: string }) => void;
+  parameters: Array<{
+    name: string;
+    type: string;
+    description: string;
+  }>;
+}*/
+
+export interface CopilotMessage {
+  id: string;
+  content: string;
+  role: typeof Role;
+  metadata?: Record<string, unknown>;
+}
+
+export type WeatherResponse = {
+  conditions: string;
+  temperature: number;
+  wind_direction: string;
+  wind_speed: number;
+};
+
+export type AgentState = {
+  final_response: WeatherResponse;
+  input: string;
+  messages: any[];
+};
 
 export interface ReadableConfig {
     description: string;
@@ -67,7 +101,19 @@ export type Action<T extends Parameter[] | [] = []> = {
   description?: string;
   parameters?: T;
   handler: T extends [] ? () => any | Promise<any> : (args: MappedParameterTypes<T>) => any | Promise<any>;
+  addRemoteActionEndpoint?: (endpoint: { url: string }) => void;
 };
+
+export interface CustomActionResult<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export interface RealtimeActionResponse {
+  response: string;
+  metadata?: Record<string, unknown>;
+}
 
 export interface SlideModel {
   content: string;
@@ -81,6 +127,50 @@ export interface SlideData {
   title: string;
   content: string;
   spokenNarration?: string;
+}
+
+export interface ActionResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export interface CopilotAction {
+  name: string;
+  description: string;
+  parameters: Array<{
+    name: string;
+    type: string;
+    description: string;
+  }>;
+  handler: (args: any) => Promise<any>;
+  addRemoteActionEndpoint?: (endpoint: { url: string }) => void;
+}
+
+export interface CopilotActionParameter {
+  name: string;
+  type: string;
+  description: string;
+}
+
+export interface CopilotConfig {
+  actions: CopilotAction[];
+  initialContext?: Record<string, any>;
+}
+
+export interface CopilotState {
+  actions: CopilotAction[];
+  context: Record<string, unknown>;
+  isInitialized: boolean;
+}
+
+export interface MessagePayload {
+  message: string;
+}
+
+export interface ActionContext {
+  payload: MessagePayload;
+  type: string;
 }
 
 export type SpreadsheetData = {
@@ -195,6 +285,8 @@ export interface ExtendedCopilotContextParams extends Omit<CopilotContextParams,
   useUpdateSlide: typeof useUpdateSlide;
   useScheduleAppointmentAction: typeof useScheduleAppointmentAction;
   useResearchAction: typeof useResearchAction;
+  sharedState: Record<string, any>;
+  updateState: (newState: Record<string, any>) => void;
 }
 
 export type { SendEmailFunction, InChatRenderFunction };
