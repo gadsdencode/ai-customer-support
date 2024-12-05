@@ -13,7 +13,6 @@ import logger from '@/app/utils/logger';
 //import { ENDPOINTS } from '@/app/configs/endpoints';
 // import { useCopilotAction } from '@copilotkit/react-core';
 import { Action, CopilotAction } from '@/app/types/copilot';
-import { Server } from 'socket.io';
 // Add interface for message structure
 interface Message {
   role: string;
@@ -83,13 +82,9 @@ const defaultActions: CopilotAction[] = [
         description: "The current runnable config"
       }
     ],
-    handler: async (args: { messages: Message[]; config: any; io: Server }) => {
+    handler: async (args: { messages: Message[]; config: any }) => {  // remove io
       const state = extractStateFromMessages(args.messages);
-
-      // Emit the state as a custom event
-      args.io.emit('agentStateUpdated', state, args.config);
-
-      return { success: true };
+      return { success: true, state };  // just return the state
     }
   }
 ];

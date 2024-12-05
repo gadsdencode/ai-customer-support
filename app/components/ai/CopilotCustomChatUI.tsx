@@ -18,12 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Trash2, RotateCcw } from "lucide-react";
+import { Loader2, Trash2, RotateCcw, Send } from 'lucide-react';
 import { gsap } from "gsap";
 import { motion, AnimatePresence } from "framer-motion";
 import ErrorBoundary from "@/app/components/errors/ErrorBoundary";
 import { useToast } from "@/hooks/use-toast";
-// import { useExecuteAction } from "@/app/services/actionService";
 import { HumanApprovalModal } from "./HumanApprovalModal";
 import { useAgentUI } from "@/hooks/useAgentUI";
 import { useRealtimeActions } from "@/hooks/useRealTimeActions";
@@ -50,7 +49,6 @@ export function CopilotCustomChatUI() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { isProcessing } = useRealtimeActions();
 
-  // CoAgent State with proper typing
   const {
     needsApproval,
     setNeedsApproval,
@@ -67,19 +65,21 @@ export function CopilotCustomChatUI() {
     render: ({ status, state }) => {
       return (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="p-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.5 }}
+          className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg backdrop-blur-sm"
         >
           {status === 'thinking' && (
             <div className="flex items-center space-x-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Thinking...</span>
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+              <span className="text-blue-500 font-medium">Processing request...</span>
             </div>
           )}
           {status === 'response' && (
-            <div className="bg-secondary rounded-lg p-4">
-              <pre className="whitespace-pre-wrap text-sm">
+            <div className="bg-white/10 rounded-lg p-4 shadow-lg">
+              <pre className="whitespace-pre-wrap text-sm text-gray-200">
                 {JSON.stringify(state, null, 2)}
               </pre>
             </div>
@@ -89,15 +89,11 @@ export function CopilotCustomChatUI() {
     }
   });
 
-  // Agent UI State
   const { uiState, updateUIState, renderDynamicUI: renderAgentUI } = useAgentUI();
 
-  // Update state based on CoAgent changes
   useEffect(() => {
-    // Skip if no meaningful state change
     if (!status || !state) return;
 
-    // Create the new state based on current conditions
     const newState: Partial<AgentUIState> = state && Object.keys(state).length > 0
       ? {
           currentView: 'action' as const,
@@ -109,16 +105,9 @@ export function CopilotCustomChatUI() {
           context: { step: streamState.currentStep }
         };
 
-    // Update UI state with the new state
     updateUIState(newState);
   }, [status, state, streamState.currentStep, updateUIState]);
 
-  // Ensure hooks are called before any conditional returns
-  // Move any hooks above this line
-
-  // Handle early return after hooks are called
-
-  // Add action handling
   const handleRealtimeAction = useCallback(
     async (actionName: string, parameters: Record<string, any>): Promise<ActionResult> => {
       const MAX_RETRIES = 3;
@@ -195,7 +184,6 @@ export function CopilotCustomChatUI() {
     []
   );
   
-  // Add error handling utility
   const handleError = useCallback(
     (error: unknown) => {
       const errorMessage =
@@ -218,14 +206,12 @@ export function CopilotCustomChatUI() {
       if (!content?.trim()) return;
 
       try {
-        // Create message with safe defaults
         const message = new TextMessage({
           content,
           role: Role.User,
           id: `msg-${Date.now()}`,
         });
 
-        // Ensure visibleMessages is initialized
         if (!Array.isArray(visibleMessages)) {
           console.warn("visibleMessages is not initialized properly");
           setMessages([message]);
@@ -235,13 +221,11 @@ export function CopilotCustomChatUI() {
 
         setInputValue("");
 
-        // First, trigger the agent state update
         await executeAction(
           { type: "processMessage", payload: { message: content } },
           { type: "processMessage", payload: { message: content } }
         );
 
-        // Then handle the chat response
         const context: ActionContext = {
           type: "sendMessage",
           payload: { message: content }
@@ -253,7 +237,6 @@ export function CopilotCustomChatUI() {
           throw new Error(result?.error || "Message sending failed");
         }
 
-        // Handle successful response
         if (result.data && typeof result.data.response === 'string') {
           const responseMessage = new TextMessage({
             content: result.data.response,
@@ -262,7 +245,6 @@ export function CopilotCustomChatUI() {
           });
           appendMessage(responseMessage);
 
-          // Update agent state with response
           await executeAction(
             { type: "processResponse", payload: { response: result.data.response } },
             { type: "processResponse", payload: { response: result.data.response } }
@@ -275,19 +257,16 @@ export function CopilotCustomChatUI() {
     [appendMessage, handleRealtimeAction, setInputValue, setMessages, visibleMessages, handleError, executeAction]
   );
 
-  // Memoize scroll handler
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
-      requestAnimationFrame(() => {
-        viewportRef.current?.scrollTo({
-          top: viewportRef.current.scrollHeight,
-          behavior: "smooth",
-        });
+      gsap.to(viewportRef.current, {
+        scrollTop: viewportRef.current.scrollHeight,
+        duration: 0.5,
+        ease: "power2.out",
       });
     }
   }, []);
 
-  // Update scroll effect with debounce
   useEffect(() => {
     const timeoutId = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timeoutId);
@@ -295,23 +274,45 @@ export function CopilotCustomChatUI() {
 
   useEffect(() => {
     gsap.from(chatCardRef.current, {
-      duration: 0.8,
+      duration: 1,
       y: 50,
       opacity: 0,
-      ease: "power3.out",
+      ease: "elastic.out(1, 0.75)",
+      scrollTrigger: {
+        trigger: chatCardRef.current,
+        start: "top bottom-=100px",
+        end: "bottom top+=100px",
+        toggleActions: "play none none reverse",
+      },
     });
   }, []);
 
   const messageVariants = useMemo(
     () => ({
-      hidden: { opacity: 0, y: 20 },
-      visible: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: -20 },
+      hidden: { opacity: 0, y: 20, scale: 0.95 },
+      visible: { 
+        opacity: 1, 
+        y: 0, 
+        scale: 1,
+        transition: { 
+          type: "spring",
+          stiffness: 260,
+          damping: 20
+        }
+      },
+      exit: { 
+        opacity: 0, 
+        y: -20, 
+        scale: 0.95,
+        transition: { 
+          duration: 0.2,
+          ease: "easeInOut"
+        }
+      },
     }),
     []
   );
 
-  // Memoize the value for useCopilotReadable
   const copilotReadableValue = useMemo(
     () => ({
       messageCount: visibleMessages.length,
@@ -322,13 +323,11 @@ export function CopilotCustomChatUI() {
     [visibleMessages, isLoading]
   );
 
-  // Copilot readable state
   useCopilotReadable({
     description: "Chat UI State",
     value: copilotReadableValue,
   });
 
-  // Memoize handler functions for useCopilotAction
   const sendJokeMessageHandler = useCallback(
     async ({ message }: { message: string }) => {
       toast({
@@ -353,7 +352,6 @@ export function CopilotCustomChatUI() {
     return "Chat cleared successfully";
   }, [setMessages, toast]);
 
-  // Copilot actions
   useCopilotAction({
     name: "sendJokeMessage",
     description: "Send a clever joke to the chat",
@@ -378,19 +376,17 @@ export function CopilotCustomChatUI() {
     <AgentUIProvider>
       <Card
         ref={chatCardRef}
-        className="w-[90vw] mx-auto h-[90vh] flex flex-col bg-gradient-to-br from-gray-900 to-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-700"
+        className="w-[90vw] mx-auto h-[90vh] flex flex-col bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl rounded-xl overflow-hidden border border-blue-500/30"
       >
         <CardContent className="flex flex-col h-full p-6">
           <ErrorBoundary>
             <AGUIShowcase />
-            {/* Render both UI systems */}
-            <div className="mb-4">
+            <div className="mb-4 space-y-4">
               {renderAgentUI()}
               {renderCoAgentUI()}
             </div>
             
-            {/* Chat messages */}
-            <div className="flex-grow pr-4 custom-scrollbar" ref={scrollAreaRef}>
+            <div className="flex-grow pr-4 custom-scrollbar overflow-y-auto" ref={scrollAreaRef}>
               {needsApproval && (
                 <HumanApprovalModal
                   isOpen={needsApproval}
@@ -431,17 +427,12 @@ export function CopilotCustomChatUI() {
                       initial="hidden"
                       animate="visible"
                       exit="exit"
-                      transition={{
-                        duration: 0.4,
-                        ease: "easeOut",
-                        delay: index * 0.1,
-                      }}
                       className={`flex items-start space-x-4 mb-4 ${
                         role === Role.User ? "justify-end" : "justify-start"
                       }`}
                     >
                       {role !== Role.User && (
-                        <Avatar className="border-2 border-primary shadow-glow">
+                        <Avatar className="border-2 border-blue-500 shadow-glow-blue">
                           <AvatarImage src="/support-avatar.png" alt="AI" />
                           <AvatarFallback>AI</AvatarFallback>
                         </Avatar>
@@ -449,9 +440,9 @@ export function CopilotCustomChatUI() {
                       <div
                         className={`rounded-lg p-3 max-w-[70%] ${
                           role === Role.User
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary text-secondary-foreground"
-                        } shadow-md transition-all duration-300 ease-in-out hover:shadow-lg relative overflow-hidden`}
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-800/30 text-gray-200"
+                        } shadow-md transition-all duration-300 ease-in-out hover:shadow-lg relative overflow-hidden backdrop-blur-sm`}
                         style={
                           role !== Role.User
                             ? { position: "relative", overflow: "hidden" }
@@ -460,11 +451,11 @@ export function CopilotCustomChatUI() {
                       >
                         <p className="text-sm leading-relaxed">{content}</p>
                         {role !== Role.User && (
-                          <div className="absolute inset-0 bg-shimmer" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 animate-shimmer" />
                         )}
                       </div>
                       {role === Role.User && (
-                        <Avatar className="border-2 border-secondary shadow-glow">
+                        <Avatar className="border-2 border-purple-500 shadow-glow-purple">
                           <AvatarImage
                             src="/generic-support-avatar.png"
                             alt="User"
@@ -482,15 +473,14 @@ export function CopilotCustomChatUI() {
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    transition={{ duration: 0.3 }}
                     className="flex items-start space-x-4 mb-4 justify-start"
                   >
-                    <Avatar className="border-2 border-primary shadow-glow">
+                    <Avatar className="border-2 border-blue-500 shadow-glow-blue">
                       <AvatarImage src="/generic-support-avatar.png" alt="AI" />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
-                    <div className="rounded-lg p-3 max-w-[70%] bg-secondary text-secondary-foreground shadow-md flex items-center space-x-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                    <div className="rounded-lg p-3 max-w-[70%] bg-gray-800/30 text-gray-200 shadow-md flex items-center space-x-2 backdrop-blur-sm">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
                       <p className="text-sm leading-relaxed">Thinking...</p>
                     </div>
                   </motion.div>
@@ -508,15 +498,18 @@ export function CopilotCustomChatUI() {
                   sendMessageHandler(inputValue);
                 }
               }}
+              className="bg-gray-800/50 border-gray-700 text-gray-200 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Type your message..."
             />
             <Button
               onClick={() => sendMessageHandler(inputValue)}
               disabled={isProcessing || inputValue.trim() === ""}
+              className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
             >
               {isProcessing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "Send"
+                <Send className="w-4 h-4" />
               )}
             </Button>
           </div>
@@ -556,3 +549,4 @@ export function CopilotCustomChatUI() {
     </AgentUIProvider>
   );
 }
+
