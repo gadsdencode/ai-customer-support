@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // /app/contexts/InteleosContext.tsx
 'use client'
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { CopilotReadableOptions, ExtendedCopilotContextParams, SlideData } from '../types/copilot';
 import { useToast } from '../../hooks/use-toast';
 import { supabase } from '../utils/supabase/client';
@@ -40,6 +40,7 @@ import { useMakeCopilotReadable } from '../../hooks/useMakeCopilotReadable';
 import { useGenerateSpreadsheetAction } from '../../hooks/useGenerateSpreadsheetAction';
 import { useGeneratePresentationAction } from '../../hooks/useGeneratePresentationAction';
 import { SupabaseError, DataNotFoundError } from '../utils/error-classes/errorClasses';
+import { SharedState } from '../types/agent';
 type PollActionType = ReturnType<typeof useCopilotPollAction>;
 type SpreadsheetData = {
   headers: string[];
@@ -71,6 +72,36 @@ export interface FrontendAction<T> {
 
 type FrontendActionType = ReturnType<typeof useCopilotAction>;
 
+interface InteleosContextType {
+  sharedState: SharedState;
+  updateState: (newState: Partial<SharedState>, options?: UpdateStateOptions) => void;
+}
+
+interface UpdateStateOptions {
+  merge?: boolean;
+  reset?: boolean;
+}
+
+const initialState: SharedState = {
+  currentAction: undefined,
+  lastAction: undefined,
+  lastError: undefined,
+  isProcessing: false,
+};
+
+export const InteleosSharedStateContext = createContext<InteleosContextType>({
+  sharedState: initialState,
+  updateState: () => {},
+});
+
+export const useSharedState = () => {
+  const context = useContext(InteleosSharedStateContext);
+  if (!context) {
+    throw new Error('useSharedState must be used within InteleosContextProvider');
+  }
+  return context;
+};
+
 export const InteleosContext = createContext<ExtendedCopilotContextParams | undefined>(undefined);
 
 export const InteleosContextProvider: React.FC<CopilotContextProviderProps> = ({ children }) => {
@@ -96,9 +127,22 @@ export const InteleosContextProvider: React.FC<CopilotContextProviderProps> = ({
   const researchAction = useResearchAction();
   const pollAction = useCopilotPollAction();
   const pollComponent = PollComponent;
-  
+  const [sharedState, setSharedState] = useState<SharedState>(initialState);
 
-  
+  const updateState = useCallback((
+    newState: Partial<SharedState>, 
+    options: UpdateStateOptions = { merge: true }
+  ) => {
+    setSharedState(prevState => {
+      if (options.reset) {
+        return { ...initialState, ...newState };
+      }
+      return options.merge 
+        ? { ...prevState, ...newState }
+        : { ...initialState, ...newState };
+    });
+  }, []);
+
 
   useEffect(() => {
     const fetchDocumentContent = async () => {
@@ -176,6 +220,8 @@ export const InteleosContextProvider: React.FC<CopilotContextProviderProps> = ({
     setInitialSlides,
     setCurrentSlide,
     setDirection,
+    sharedState,
+    updateState,
   ]);
 
   // Register the schedule appointment action
@@ -184,6 +230,8 @@ export const InteleosContextProvider: React.FC<CopilotContextProviderProps> = ({
   useResearchAction();
 
   const suggestionsContext: ExtendedCopilotContextParams = {
+    sharedState,
+    updateState,
     showDevConsole: false,
     coagentStates: {},
     setCoagentStates: () => { },
@@ -347,7 +395,7 @@ export const InteleosContextProvider: React.FC<CopilotContextProviderProps> = ({
   useGenerateChartAction();
 
   return (
-    <InteleosContext.Provider value={suggestionsContext}>
+    <InteleosContext.Provider value={{...suggestionsContext, sharedState, updateState}}>
       {children}
     </InteleosContext.Provider>
   );
