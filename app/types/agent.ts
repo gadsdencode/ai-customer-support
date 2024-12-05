@@ -2,11 +2,19 @@
 // app/types/agent.ts
 import { ReactNode } from 'react';
 
+export enum ViewTypeEnum {
+  DEFAULT = 'default',
+  APPROVAL = 'approval',
+  THINKING = 'thinking',
+  ACTION = 'action',
+  ERROR = 'error',
+}
+
 export interface AgentUIState {
-    currentView: 'default' | 'thinking' | 'action' | 'approval';
-    actions: string[];
-    context: Record<string, unknown>;
-  }
+  currentView: ViewTypeEnum;
+  actions: string[];
+  context: Record<string, any>;
+}
 
   export interface CoAgentState {
     render: () => ReactNode;
@@ -27,7 +35,10 @@ export interface AgentUIState {
   
   export interface ActionResult {
     success: boolean;
-    data?: Record<string, unknown>;
+    data?: {
+      response: string;
+      metadata?: Record<string, unknown>;
+    };
     error?: string;
     timestamp: string;
   }
@@ -47,4 +58,10 @@ export interface AgentUIState {
       timestamp: string;
     };
     isProcessing: boolean;
+  }
+
+  export interface AgentStreamState {
+    currentStep: string;
+    confidence: number;
+    intermediateResults: any[];
   }
