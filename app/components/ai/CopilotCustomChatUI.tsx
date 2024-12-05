@@ -96,7 +96,7 @@ export function CopilotCustomChatUI() {
   });
 
   // Initialize UI state
-  const { uiState, updateUIState, /*renderDynamicUI*/ } = useAgentUI();
+  const { uiState, updateUIState } = useAgentUI();
 
   // Update UI state based on agent status
   useEffect(() => {
@@ -374,7 +374,7 @@ export function CopilotCustomChatUI() {
                   isOpen={needsApproval}
                   onClose={() => {
                     setNeedsApproval(false);
-                    updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+                    updateUIState({ currentView: ViewTypeEnum.APPROVAL });
                   }}
                   onApprove={async () => {
                     if (pendingAction && uiState.context) {
@@ -382,13 +382,13 @@ export function CopilotCustomChatUI() {
                         { type: pendingAction, payload: {} },
                         { type: pendingAction, payload: uiState.context }
                       );
-                      updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+                      updateUIState({ currentView: ViewTypeEnum.APPROVAL });
                     }
                   }}
                   onReject={() => {
                     setNeedsApproval(false);
                     setPendingAction(null);
-                    updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+                    updateUIState({ currentView: ViewTypeEnum.APPROVAL });
                   }}
                   data={typeof pendingAction === 'string' ? { action: pendingAction } : {}}
                 />
@@ -504,6 +504,6 @@ export function CopilotCustomChatUI() {
           </div>
         </CardContent>
       </Card>
-    </AgentUIProvider>
+      </AgentUIProvider>
   );
 }
