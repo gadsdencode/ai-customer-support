@@ -1,27 +1,52 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/components/ai/CoAgentStateDisplay.tsx
 
-'use client'; // Ensure this is at the top if using Next.js with the App Router
+'use client';
 
 import React from 'react';
-// import { useCoAgentStateRender } from '@copilotkit/react-core';
-import { useCoAgentStateRender } from '@/hooks/useCoAgentStateRender';
-import { AgentState } from '@/app/types/copilot';
 import WeatherInfo from './WeatherInfo';
+import { Loader2 } from 'lucide-react';
+import { WeatherResponse } from '@/app/types/copilot';
+import { useAgentUIContext } from '@/app/providers/AGUIProvider';
 
-const AgentStateDisplay: React.FC = () => {
-  useCoAgentStateRender<AgentState>({
-    name: 'basic_agent', // Replace with your actual agent name
-    // nodeName: 'specific_node', // Optional: specify a node if needed
-    render: ({ status, state, nodeName }) => {
-      // You can handle different statuses or nodes if necessary
+interface WeatherState {
+  final_response: WeatherResponse;
+}
+
+const CoAgentStateDisplay: React.FC = () => {
+  const { weatherAgent } = useAgentUIContext();
+  const { status, state } = weatherAgent;
+  
+  const renderWeatherUI = () => {
+    if (status === 'thinking') {
       return (
-        <WeatherInfo data={state.final_response} />
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Processing weather request...</span>
+        </div>
       );
-    },
-  });
+    }
+    
+    if (status === 'response' && state && 'final_response' in state) {
+      const weatherState = (state as unknown) as WeatherState;
+      if ('final_response' in weatherState && 
+          typeof weatherState.final_response === 'object' && 
+          weatherState.final_response !== null) {
+        return <WeatherInfo data={weatherState.final_response} />;
+      }
+    }
+    
+    return (
+      <div className="text-sm text-muted-foreground">
+        Waiting for weather data...
+      </div>
+    );
+  };
 
-  return null; // This hook handles rendering, so no need to return any JSX here
+  return (
+    <div className="agent-state-display p-4 bg-secondary rounded-lg">
+      {renderWeatherUI()}
+    </div>
+  );
 };
 
-export default AgentStateDisplay;
+export default CoAgentStateDisplay;

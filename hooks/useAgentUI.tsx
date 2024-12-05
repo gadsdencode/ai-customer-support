@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/hooks/useAgentUI.ts
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { AgentUIState } from '@/app/types/agent';
 import { motion } from 'framer-motion';
 import { ThinkingView } from '@/app/components/ai/views/ThinkingView';
@@ -8,20 +8,34 @@ import { ActionView } from '@/app/components/ai/views/ActionView';
 import { HumanApprovalModal } from '@/app/components/ai/HumanApprovalModal';
 import { actionRequiresApproval } from "@/app/utils/actionUtils";
 import { useRealtimeActions } from '@/hooks/useRealTimeActions';
+
 export const useAgentUI = () => {
   const [uiState, setUIState] = useState<AgentUIState>({
     currentView: 'default',
     actions: [],
     context: {}
   });
+  
   const { handleRealtimeAction } = useRealtimeActions();
+  const prevStateRef = useRef<AgentUIState>(uiState);
+
   const updateUIState = useCallback((
     newState: Partial<AgentUIState>
   ) => {
-    setUIState(prev => ({
-      ...prev,
-      ...newState
-    }));
+    setUIState(prev => {
+      const merged = {
+        ...prev,
+        ...newState
+      };
+      
+      // Only update if the state has actually changed
+      if (JSON.stringify(prevStateRef.current) === JSON.stringify(merged)) {
+        return prev;
+      }
+      
+      prevStateRef.current = merged;
+      return merged;
+    });
   }, []);
 
   const renderDynamicUI = useCallback(() => {
@@ -81,7 +95,7 @@ export const useAgentUI = () => {
       default:
         return null;
     }
-  }, [uiState, handleRealtimeAction]);
+  }, [uiState, handleRealtimeAction, updateUIState]);
 
   return {
     uiState,

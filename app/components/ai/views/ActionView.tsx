@@ -1,3 +1,5 @@
+// app/components/ai/views/ActionView.tsx
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';

@@ -22,7 +22,7 @@ const CORS_HEADERS = {
   export const POST = async (req: NextRequest) => {
   try {
     const body = await req.json();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,4 +45,11 @@ const CORS_HEADERS = {
         }
       );
     }
+  };
+
+  export const GET = async (req: NextRequest) => {
+    return new NextResponse(null, {
+      status: 204,
+      headers: CORS_HEADERS
+    });
   };

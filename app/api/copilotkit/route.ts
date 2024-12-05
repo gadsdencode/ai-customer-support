@@ -13,6 +13,23 @@ import logger from '@/app/utils/logger';
 //import { ENDPOINTS } from '@/app/configs/endpoints';
 // import { useCopilotAction } from '@copilotkit/react-core';
 import { Action, CopilotAction } from '@/app/types/copilot';
+import { Server } from 'socket.io';
+// Add interface for message structure
+interface Message {
+  role: string;
+  content: string;
+  // Add other message properties as needed
+}
+
+// Helper function to extract state from messages
+function extractStateFromMessages(messages: Message[]): any {
+  return {
+    lastMessage: messages[messages.length - 1]?.content || null,
+    messageCount: messages.length,
+    timestamp: new Date().toISOString()
+  };
+}
+
 // Environment configuration validation
 const EnvSchema = z.object({
   NEXT_PUBLIC_OPENAI_API_KEY: z.string().min(1),
@@ -50,8 +67,33 @@ const defaultActions: CopilotAction[] = [
       // Implement the handler logic here
       return { success: true, data: args };
     }
+  },
+  {
+    name: "emitState",
+    description: "Emit agent state",
+    parameters: [
+      {
+        name: "messages",
+        type: "array",
+        description: "The list of messages"
+      },
+      {
+        name: "config",
+        type: "object",
+        description: "The current runnable config"
+      }
+    ],
+    handler: async (args: { messages: Message[]; config: any; io: Server }) => {
+      const state = extractStateFromMessages(args.messages);
+
+      // Emit the state as a custom event
+      args.io.emit('agentStateUpdated', state, args.config);
+
+      return { success: true };
+    }
   }
 ];
+
 
 // Initialize the CopilotRuntime instance with remote action endpoints
 const runtime = new CopilotRuntime({

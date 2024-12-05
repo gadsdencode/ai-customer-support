@@ -1,131 +1,201 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// app/hooks/useCoAgentStateRender.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useCallback, useEffect, useState, useRef } from 'react';
+import type { CoAgentState, ActionContext } from '@/app/types/agent';
+import { WeatherResponse } from '@/app/types/copilot';
+import { useAgentStore } from '@/app/store/AgentStateStore';
 
-"use client"; // Ensure this is at the top if using Next.js with the App Router.
-
-import { ENDPOINTS } from '@/app/configs/endpoints';
-import { useEffect, useState } from 'react';
-import ReactDOM from 'react-dom/client';
-
-interface UseCoAgentStateRenderOptions<T> {
-  name: string;
-  nodeName?: string;
-  streamEndpoint?: string;
-  render: (params: {
-    status: string;
-    state: T;
-    nodeName?: string;
-    streamState?: StreamState;
-  }) => JSX.Element;
+export interface RenderState {
+  status: string;
+  state: WeatherAgentState;
+  metadata?: {
+    step: string;
+    confidence: number;
+    error?: string;
+  };
 }
 
-interface StreamState {
-    intermediateResults: any[];
-    currentStep: string;
-    confidence: number;
-  }
+export interface WeatherAgentState extends Record<string, unknown> {
+  final_response: WeatherResponse;
+}
 
-export function useCoAgentStateRender<T>({
+interface UseCoAgentStateRenderOptions {
+  name: string;
+  streamEndpoint: string;
+  render: (state: RenderState) => React.ReactNode;
+}
+
+export function useCoAgentStateRender({
   name,
-  nodeName,
   streamEndpoint,
   render,
-}: UseCoAgentStateRenderOptions<T>) {
-  const [status, setStatus] = useState<string>('');
-  const [state, setState] = useState<T | null>(null);
-  const [currentNodeName, setCurrentNodeName] = useState<string | undefined>(undefined);
-  const [root, setRoot] = useState<ReactDOM.Root | null>(null);
-  const [element, setElement] = useState<HTMLElement | null>(null);
-
-  const [streamState, setStreamState] = useState<StreamState>({
-    intermediateResults: [],
-    currentStep: '',
-    confidence: 0
+}: UseCoAgentStateRenderOptions): CoAgentState {
+  const [currentState, setCurrentState] = useState<RenderState>({
+    status: 'idle',
+    state: { final_response: {} as WeatherResponse } as WeatherAgentState,
+    metadata: {
+      step: '',
+      confidence: 0
+    }
   });
 
-  useEffect(() => {
-    // Create a div for the portal
-    const div = document.createElement('div');
-    document.body.appendChild(div);
-    setElement(div);
-
-    // Create a React root
-    const reactRoot = ReactDOM.createRoot(div);
-    setRoot(reactRoot);
-
-    // Clean up on unmount
-    return () => {
-      reactRoot.unmount();
-      document.body.removeChild(div);
-    };
+  const [needsApproval, setNeedsApproval] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  
+  const updateAgentState = useAgentStore(state => state.updateState);
+  const resetAgentState = useAgentStore(state => state.resetState);
+  
+  const processingRef = useRef<boolean>(false);
+  const activeStreamRef = useRef<boolean>(false);
+  
+  const cleanup = useCallback(() => {
+    processingRef.current = false;
+    activeStreamRef.current = false;
   }, []);
 
-  useEffect(() => {
-    // Set up both event sources if needed
-    const eventSources: EventSource[] = [];
+  const renderDynamicUI = useCallback(() => {
+    return render(currentState);
+  }, [currentState, render]);
+  
+  const executeAction = useCallback(async (action: ActionContext, context: ActionContext): Promise<void> => {
+    if (processingRef.current) return;
     
-    // Main coagent event source
-    const mainEventSource = new EventSource(`${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`);
-    eventSources.push(mainEventSource);
+    try {
+      cleanup();
+      processingRef.current = true;
+      activeStreamRef.current = true;
 
-    const handleMainMessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        const { agentName, node, status: eventStatus, state: eventState } = data;
-
-        if (agentName !== name) return;
-        if (nodeName && node !== nodeName) return;
-
-        setStatus(eventStatus);
-        setState(eventState);
-        setCurrentNodeName(node);
-      } catch (error) {
-        console.error('Error parsing event data:', error);
-      }
-    };
-
-    mainEventSource.addEventListener('message', handleMainMessage);
-
-    // Set up streaming event source if endpoint provided
-    if (streamEndpoint) {
-      const streamEventSource = new EventSource(streamEndpoint);
-      eventSources.push(streamEventSource);
-
-      const handleStreamUpdate = (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          setStreamState(prev => ({
-            ...prev,
-            intermediateResults: [...prev.intermediateResults, data],
-            currentStep: data.step || prev.currentStep,
-            confidence: data.confidence || prev.confidence
-          }));
-        } catch (error) {
-          console.error('Error parsing stream data:', error);
+      // Update both local and global state
+      const newState = {
+        status: 'thinking',
+        state: { final_response: {} as WeatherResponse } as WeatherAgentState,
+        metadata: {
+          step: 'Processing request...',
+          confidence: 0.5
         }
       };
+      
+      setCurrentState(newState);
+      updateAgentState({
+        currentStep: 'Processing request...',
+        confidence: 0.5,
+        isProcessing: true,
+        intermediateResults: []
+      });
 
-      streamEventSource.addEventListener('message', handleStreamUpdate);
+      const response = await fetch(streamEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify({
+          agent_name: name,
+          action: action.type,
+          context: context.payload,
+          stream: true
+        })
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error('Stream error');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalResponseSet = false;
+
+      while (activeStreamRef.current) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const event = JSON.parse(line);
+              if (event.type === 'update' && event.data) {
+                const weatherData = {
+                  conditions: event.data.conditions || 'Unknown',
+                  temperature: parseFloat(event.data.temperature) || 0,
+                  wind_speed: parseFloat(event.data.wind_speed) || 0,
+                  wind_direction: event.data.wind_direction || 'N/A'
+                };
+
+                const newState = {
+                  status: 'response',
+                  state: {
+                    final_response: weatherData
+                  } as WeatherAgentState,
+                  metadata: {
+                    step: 'Received weather data',
+                    confidence: 1
+                  }
+                };
+
+                setCurrentState(newState);
+                updateAgentState({
+                  currentStep: 'Received weather data',
+                  confidence: 1,
+                  isProcessing: false,
+                  intermediateResults: [weatherData]
+                });
+                
+                finalResponseSet = true;
+              }
+            } catch (e) {
+              console.error('Error parsing stream data:', e);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Action error:', error);
+      setCurrentState({
+        status: 'error',
+        state: { final_response: {} as WeatherResponse } as WeatherAgentState,
+        metadata: {
+          step: 'Error occurred',
+          confidence: 0,
+          error: String(error)
+        }
+      });
+      updateAgentState({
+        currentStep: 'Error occurred',
+        confidence: 0,
+        isProcessing: false,
+        intermediateResults: []
+      });
+    } finally {
+      cleanup();
     }
-
-    // Clean up function
-    return () => {
-      eventSources.forEach(es => es.close());
-    };
-  }, [name, nodeName, streamEndpoint]);
+  }, [name, streamEndpoint, updateAgentState, cleanup]);
 
   useEffect(() => {
-    if (root && state) {
-      const content = render({
-        status,
-        state,
-        nodeName: currentNodeName,
-        streamState,
-      });
-      root.render(content);
-    }
-  }, [root, status, state, currentNodeName, streamState, render]);
+    return () => {
+      cleanup();
+      resetAgentState();
+    };
+  }, [resetAgentState, cleanup]);
 
-  return null;
-}
+  return {
+    needsApproval,
+    setNeedsApproval,
+    pendingAction,
+    setPendingAction,
+    executeAction,
+    renderDynamicUI,
+    status: currentState.status,
+    state: currentState.state,
+    streamState: {
+      intermediateResults: [],
+      currentStep: currentState.metadata?.step || '',
+      confidence: currentState.metadata?.confidence || 0
+    }
+  };
+} 
