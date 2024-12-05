@@ -9,6 +9,7 @@ export interface AgentUIState {
   }
 
   export interface CoAgentState {
+    render: () => ReactNode;
     needsApproval: boolean;
     setNeedsApproval: (value: boolean) => void;
     pendingAction: string | null;

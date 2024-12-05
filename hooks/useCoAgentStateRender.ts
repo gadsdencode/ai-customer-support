@@ -184,6 +184,7 @@ export function useCoAgentStateRender({
   }, [resetAgentState, cleanup]);
 
   return {
+    render: renderDynamicUI,
     needsApproval,
     setNeedsApproval,
     pendingAction,

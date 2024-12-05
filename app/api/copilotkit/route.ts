@@ -13,9 +13,10 @@ import logger from '@/app/utils/logger';
 //import { ENDPOINTS } from '@/app/configs/endpoints';
 // import { useCopilotAction } from '@copilotkit/react-core';
 import { Action, CopilotAction } from '@/app/types/copilot';
+import { MessageRole } from '@copilotkit/runtime-client-gql';
 // Add interface for message structure
-interface Message {
-  role: string;
+export interface Message {
+  role: MessageRole;
   content: string;
   // Add other message properties as needed
 }

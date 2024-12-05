@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// File: src/components/chat/CopilotCustomChatUI.tsx
 "use client";
 
 import React, {
@@ -27,13 +28,21 @@ import { HumanApprovalModal } from "./HumanApprovalModal";
 import { useAgentUI } from "@/hooks/useAgentUI";
 import { useRealtimeActions } from "@/hooks/useRealTimeActions";
 import { useCoAgentStateRender } from "@/hooks/useCoAgentStateRender";
-import { ActionContext, ActionResult, AgentUIState } from "@/app/types/agent";
+import { ActionContext, ActionResult } from "@/app/types/agent";
 import { ENDPOINTS } from "@/app/configs/endpoints";
 import { AgentUIProvider } from '@/app/providers/AGUIProvider';
 import AGUIShowcase from '@/app/components/ai/views/AGUIShowcase';
 
 export function CopilotCustomChatUI() {
+  // Initialize hooks and state
   const { toast } = useToast();
+  const [inputValue, setInputValue] = useState("");
+  const chatCardRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { isProcessing } = useRealtimeActions();
+
+  // Initialize chat and agent state
   const {
     visibleMessages,
     appendMessage,
@@ -43,12 +52,7 @@ export function CopilotCustomChatUI() {
     isLoading,
   } = useCopilotChat();
 
-  const [inputValue, setInputValue] = useState("");
-  const chatCardRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { isProcessing } = useRealtimeActions();
-
+  // Initialize co-agent state renderer
   const {
     needsApproval,
     setNeedsApproval,
@@ -61,7 +65,7 @@ export function CopilotCustomChatUI() {
     streamState
   } = useCoAgentStateRender({
     name: "weather_agent",
-    streamEndpoint: `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`,
+    streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
     render: ({ status, state }) => {
       return (
         <motion.div
@@ -89,12 +93,14 @@ export function CopilotCustomChatUI() {
     }
   });
 
+  // Initialize UI state
   const { uiState, updateUIState, renderDynamicUI: renderAgentUI } = useAgentUI();
 
+  // Update UI state based on agent status
   useEffect(() => {
     if (!status || !state) return;
 
-    const newState: Partial<AgentUIState> = state && Object.keys(state).length > 0
+    const newState = state && Object.keys(state).length > 0
       ? {
           currentView: 'action' as const,
           actions: ['process', 'ignore'],
@@ -108,43 +114,39 @@ export function CopilotCustomChatUI() {
     updateUIState(newState);
   }, [status, state, streamState.currentStep, updateUIState]);
 
+  // Handle realtime actions with retry logic
   const handleRealtimeAction = useCallback(
     async (actionName: string, parameters: Record<string, any>): Promise<ActionResult> => {
       const MAX_RETRIES = 3;
       const RETRY_DELAY = 1000;
 
-      const makeRequest = async (
-        attempt: number = 1
-      ): Promise<ActionResult> => {
+      const makeRequest = async (attempt: number = 1): Promise<ActionResult> => {
         try {
           if (!actionName) {
             throw new Error("Action name is required");
           }
 
-          const requestOptions: RequestInit = {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              Origin: window.location.origin,
-            },
-            body: JSON.stringify({
-              action_name: actionName,
-              parameters: parameters || {},
-            }),
-          };
-
           const response = await fetch(
-            `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`,
-            requestOptions
+            `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Origin: window.location.origin,
+              },
+              body: JSON.stringify({
+                action_name: actionName,
+                parameters: parameters || {},
+              }),
+            }
           );
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(
-              errorData.message ||
-                `Server responded with status: ${response.status}`
+              errorData.message || `Server responded with status: ${response.status}`
             );
           }
 
@@ -156,26 +158,20 @@ export function CopilotCustomChatUI() {
               metadata: data.metadata,
             },
             timestamp: new Date().toISOString(),
-          } as ActionResult;
+          };
         } catch (error) {
           console.error(`Attempt ${attempt} failed:`, error);
 
           if (attempt < MAX_RETRIES) {
-            console.log(`Retrying... Attempt ${attempt + 1} of ${MAX_RETRIES}`);
-            await new Promise((resolve) =>
-              setTimeout(resolve, RETRY_DELAY * attempt)
-            );
+            await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * attempt));
             return makeRequest(attempt + 1);
           }
 
           return {
             success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Unknown error occurred",
+            error: error instanceof Error ? error.message : "Unknown error occurred",
             timestamp: new Date().toISOString(),
-          } as ActionResult;
+          };
         }
       };
 
@@ -183,14 +179,12 @@ export function CopilotCustomChatUI() {
     },
     []
   );
-  
+
+  // Handle errors with toast notifications
   const handleError = useCallback(
     (error: unknown) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       console.error("Message send failed:", errorMessage);
-
       toast({
         title: "Communication Error",
         description: `Failed to send message: ${errorMessage}`,
@@ -201,6 +195,7 @@ export function CopilotCustomChatUI() {
     [toast]
   );
 
+  // Handle message sending
   const sendMessageHandler = useCallback(
     async (content: string) => {
       if (!content?.trim()) return;
@@ -212,13 +207,7 @@ export function CopilotCustomChatUI() {
           id: `msg-${Date.now()}`,
         });
 
-        if (!Array.isArray(visibleMessages)) {
-          console.warn("visibleMessages is not initialized properly");
-          setMessages([message]);
-        } else {
-          appendMessage(message);
-        }
-
+        appendMessage(message);
         setInputValue("");
 
         await executeAction(
@@ -254,9 +243,10 @@ export function CopilotCustomChatUI() {
         handleError(error);
       }
     },
-    [appendMessage, handleRealtimeAction, setInputValue, setMessages, visibleMessages, handleError, executeAction]
+    [appendMessage, handleRealtimeAction, setInputValue, setMessages, handleError, executeAction]
   );
 
+  // Handle scrolling
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
       gsap.to(viewportRef.current, {
@@ -272,21 +262,7 @@ export function CopilotCustomChatUI() {
     return () => clearTimeout(timeoutId);
   }, [visibleMessages, scrollToBottom]);
 
-  useEffect(() => {
-    gsap.from(chatCardRef.current, {
-      duration: 1,
-      y: 50,
-      opacity: 0,
-      ease: "elastic.out(1, 0.75)",
-      scrollTrigger: {
-        trigger: chatCardRef.current,
-        start: "top bottom-=100px",
-        end: "bottom top+=100px",
-        toggleActions: "play none none reverse",
-      },
-    });
-  }, []);
-
+  // Animation setup
   const messageVariants = useMemo(
     () => ({
       hidden: { opacity: 0, y: 20, scale: 0.95 },
@@ -313,12 +289,12 @@ export function CopilotCustomChatUI() {
     []
   );
 
+  // Copilot readable value
   const copilotReadableValue = useMemo(
     () => ({
       messageCount: visibleMessages.length,
       isLoading,
-      lastMessage:
-        visibleMessages[visibleMessages.length - 1]?.isTextMessage,
+      lastMessage: visibleMessages[visibleMessages.length - 1]?.isTextMessage,
     }),
     [visibleMessages, isLoading]
   );
@@ -328,6 +304,7 @@ export function CopilotCustomChatUI() {
     value: copilotReadableValue,
   });
 
+  // Action handlers
   const sendJokeMessageHandler = useCallback(
     async ({ message }: { message: string }) => {
       toast({
@@ -352,6 +329,7 @@ export function CopilotCustomChatUI() {
     return "Chat cleared successfully";
   }, [setMessages, toast]);
 
+  // Register Copilot actions
   useCopilotAction({
     name: "sendJokeMessage",
     description: "Send a clever joke to the chat",
@@ -372,6 +350,7 @@ export function CopilotCustomChatUI() {
     handler: clearChatHandler,
   });
 
+  // Render component
   return (
     <AgentUIProvider>
       <Card
@@ -443,11 +422,6 @@ export function CopilotCustomChatUI() {
                             ? "bg-blue-600 text-white"
                             : "bg-gray-800/30 text-gray-200"
                         } shadow-md transition-all duration-300 ease-in-out hover:shadow-lg relative overflow-hidden backdrop-blur-sm`}
-                        style={
-                          role !== Role.User
-                            ? { position: "relative", overflow: "hidden" }
-                            : undefined
-                        }
                       >
                         <p className="text-sm leading-relaxed">{content}</p>
                         {role !== Role.User && (
@@ -456,38 +430,17 @@ export function CopilotCustomChatUI() {
                       </div>
                       {role === Role.User && (
                         <Avatar className="border-2 border-purple-500 shadow-glow-purple">
-                          <AvatarImage
-                            src="/generic-support-avatar.png"
-                            alt="User"
-                          />
+                          <AvatarImage src="/generic-support-avatar.png" alt="User" />
                           <AvatarFallback>You</AvatarFallback>
                         </Avatar>
                       )}
                     </motion.div>
                   );
                 })}
-                {isLoading && (
-                  <motion.div
-                    key="loading-message"
-                    variants={messageVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="flex items-start space-x-4 mb-4 justify-start"
-                  >
-                    <Avatar className="border-2 border-blue-500 shadow-glow-blue">
-                      <AvatarImage src="/generic-support-avatar.png" alt="AI" />
-                      <AvatarFallback>AI</AvatarFallback>
-                    </Avatar>
-                    <div className="rounded-lg p-3 max-w-[70%] bg-gray-800/30 text-gray-200 shadow-md flex items-center space-x-2 backdrop-blur-sm">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                      <p className="text-sm leading-relaxed">Thinking...</p>
-                    </div>
-                  </motion.div>
-                )}
               </AnimatePresence>
             </div>
           </ErrorBoundary>
+          
           <div className="flex items-center space-x-2 mt-4">
             <Input
               value={inputValue}
@@ -513,6 +466,7 @@ export function CopilotCustomChatUI() {
               )}
             </Button>
           </div>
+          
           <div className="flex justify-between mt-4">
             <Button
               variant="outline"
@@ -549,4 +503,3 @@ export function CopilotCustomChatUI() {
     </AgentUIProvider>
   );
 }
-
