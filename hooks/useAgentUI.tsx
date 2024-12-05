@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/hooks/useAgentUI.ts
 import { useState, useCallback, useRef } from 'react';
-import { AgentUIState } from '@/app/types/agent';
+import { AgentUIState, ViewTypeEnum } from '@/app/types/agent';
 import { motion } from 'framer-motion';
 import { ThinkingView } from '@/app/components/ai/views/ThinkingView';
 import { ActionView } from '@/app/components/ai/views/ActionView';
@@ -11,7 +11,7 @@ import { useRealtimeActions } from '@/hooks/useRealTimeActions';
 
 export const useAgentUI = () => {
   const [uiState, setUIState] = useState<AgentUIState>({
-    currentView: 'default',
+    currentView: ViewTypeEnum.DEFAULT,
     actions: [],
     context: {}
   });
@@ -50,7 +50,7 @@ export const useAgentUI = () => {
     };
 
     switch(currentView) {
-      case 'thinking':
+      case ViewTypeEnum.THINKING:
         return (
           <motion.div {...commonProps}>
             <ThinkingView 
@@ -59,7 +59,7 @@ export const useAgentUI = () => {
             />
           </motion.div>
         );
-      case 'action':
+      case ViewTypeEnum.ACTION:
         return (
           <motion.div {...commonProps}>
             <ActionView 
@@ -67,27 +67,27 @@ export const useAgentUI = () => {
               key="action-view"
               onActionSelect={async (action) => {
                 if (actionRequiresApproval(action)) {
-                  updateUIState({ currentView: 'approval', context: { ...context, pendingAction: action } });
+                  updateUIState({ currentView: ViewTypeEnum.APPROVAL, context: { ...context, pendingAction: action } });
                 } else {
                   await handleRealtimeAction(action, { type: action, payload: context });
-                  updateUIState({ currentView: 'default' });
+                  updateUIState({ currentView: ViewTypeEnum.DEFAULT });
                 }
               }}
             />
           </motion.div>
         );
-      case 'approval':
+      case ViewTypeEnum.APPROVAL:
         return (
           <motion.div {...commonProps}>
             <HumanApprovalModal
               isOpen={true}
-              onClose={() => updateUIState({ currentView: 'default' })}
+              onClose={() => updateUIState({ currentView: ViewTypeEnum.DEFAULT })}
               onApprove={async () => {
                 const pendingAction = context.pendingAction as string;
                 await handleRealtimeAction(pendingAction, { type: pendingAction, payload: context });
-                updateUIState({ currentView: 'default' });
+                updateUIState({ currentView: ViewTypeEnum.DEFAULT });
               }}
-              onReject={() => updateUIState({ currentView: 'default' })}
+              onReject={() => updateUIState({ currentView: ViewTypeEnum.DEFAULT })}
               data={context.pendingAction as any}
             />
           </motion.div>

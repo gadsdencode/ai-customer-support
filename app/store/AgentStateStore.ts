@@ -1,4 +1,5 @@
-// app/store/AgentStateStore.ts
+// File: src/app/store/AgentStateStore.ts
+
 import { create } from 'zustand';
 
 interface AgentState {
@@ -24,6 +25,14 @@ const initialState: AgentState = {
 export const useAgentStore = create<AgentStateStore>((set) => ({
   state: initialState,
   updateState: (partial) => 
-    set((state) => ({ state: { ...state.state, ...partial } })),
+    set((state) => ({
+      state: {
+        ...state.state,
+        ...partial,
+        intermediateResults: partial.intermediateResults
+          ? [...state.state.intermediateResults, ...partial.intermediateResults]
+          : state.state.intermediateResults,
+      }
+    })),
   resetState: () => set({ state: initialState }),
 }));

@@ -28,10 +28,12 @@ import { HumanApprovalModal } from "./HumanApprovalModal";
 import { useAgentUI } from "@/hooks/useAgentUI";
 import { useRealtimeActions } from "@/hooks/useRealTimeActions";
 import { useCoAgentStateRender } from "@/hooks/useCoAgentStateRender";
-import { ActionContext, ActionResult } from "@/app/types/agent";
+import { ActionContext, ActionResult, AgentUIState, ViewTypeEnum } from "@/app/types/agent";
 import { ENDPOINTS } from "@/app/configs/endpoints";
 import { AgentUIProvider } from '@/app/providers/AGUIProvider';
-import AGUIShowcase from '@/app/components/ai/views/AGUIShowcase';
+// import AGUIShowcase from '@/app/components/ai/views/AGUIShowcase';
+import { DynamicUIRenderer } from '@/app/components/ai/views/DynamicUIRenderer';
+// import CoAgentStateDisplay from '@/app/components/ai/CoAgentStateDisplay';
 
 export function CopilotCustomChatUI() {
   // Initialize hooks and state
@@ -94,7 +96,7 @@ export function CopilotCustomChatUI() {
   });
 
   // Initialize UI state
-  const { uiState, updateUIState, renderDynamicUI: renderAgentUI } = useAgentUI();
+  const { uiState, updateUIState } = useAgentUI();
 
   // Update UI state based on agent status
   useEffect(() => {
@@ -111,7 +113,7 @@ export function CopilotCustomChatUI() {
           context: { step: streamState.currentStep }
         };
 
-    updateUIState(newState);
+    updateUIState(newState as Partial<AgentUIState>);
   }, [status, state, streamState.currentStep, updateUIState]);
 
   // Handle realtime actions with retry logic
@@ -243,7 +245,7 @@ export function CopilotCustomChatUI() {
         handleError(error);
       }
     },
-    [appendMessage, handleRealtimeAction, setInputValue, setMessages, handleError, executeAction]
+    [appendMessage, handleRealtimeAction, setInputValue, handleError, executeAction]
   );
 
   // Handle scrolling
@@ -359,9 +361,10 @@ export function CopilotCustomChatUI() {
       >
         <CardContent className="flex flex-col h-full p-6">
           <ErrorBoundary>
-            <AGUIShowcase />
+            {/* <AGUIShowcase /> */}
             <div className="mb-4 space-y-4">
-              {renderAgentUI()}
+              
+              {/* Keep renderCoAgentUI if you still need it */}
               {renderCoAgentUI()}
             </div>
             
@@ -371,7 +374,7 @@ export function CopilotCustomChatUI() {
                   isOpen={needsApproval}
                   onClose={() => {
                     setNeedsApproval(false);
-                    updateUIState({ currentView: 'default' });
+                    updateUIState({ currentView: ViewTypeEnum.APPROVAL });
                   }}
                   onApprove={async () => {
                     if (pendingAction && uiState.context) {
@@ -379,13 +382,13 @@ export function CopilotCustomChatUI() {
                         { type: pendingAction, payload: {} },
                         { type: pendingAction, payload: uiState.context }
                       );
-                      updateUIState({ currentView: 'default' });
+                      updateUIState({ currentView: ViewTypeEnum.APPROVAL });
                     }
                   }}
                   onReject={() => {
                     setNeedsApproval(false);
                     setPendingAction(null);
-                    updateUIState({ currentView: 'default' });
+                    updateUIState({ currentView: ViewTypeEnum.APPROVAL });
                   }}
                   data={typeof pendingAction === 'string' ? { action: pendingAction } : {}}
                 />
@@ -437,6 +440,7 @@ export function CopilotCustomChatUI() {
                     </motion.div>
                   );
                 })}
+                <DynamicUIRenderer />
               </AnimatePresence>
             </div>
           </ErrorBoundary>
@@ -500,6 +504,6 @@ export function CopilotCustomChatUI() {
           </div>
         </CardContent>
       </Card>
-    </AgentUIProvider>
+      </AgentUIProvider>
   );
 }
