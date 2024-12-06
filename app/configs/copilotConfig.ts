@@ -9,7 +9,7 @@ export const initialCopilotState: CopilotState = {
 };
 
 export const copilotConfig = {
-  baseURL: ENDPOINTS.PRODUCTION.ACTIONS,
+  baseURL: ENDPOINTS.LOCAL.ACTIONS,
   defaultActions: [
     {
       name: "sendMessage",

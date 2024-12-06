@@ -59,77 +59,118 @@ export function useCoAgentStateRender({
   
   const executeAction = useCallback(async (action: ActionContext, context: ActionContext): Promise<void> => {
     if (processingRef.current) return;
-    
+
     try {
-      cleanup();
-      processingRef.current = true;
-      activeStreamRef.current = true;
+        cleanup();
+        processingRef.current = true;
+        activeStreamRef.current = true;
 
-      // Update both local and global state
-      const newState = {
-        status: 'thinking',
-        state: { final_response: {} as WeatherResponse } as WeatherAgentState,
-        metadata: {
-          step: 'Processing request...',
-          confidence: 0.5
+            // Update thinking state when starting
+        updateAgentState({
+          isThinking: true,
+          currentStep: 'Processing request...',
+          confidence: 0.5,
+          isProcessing: true
+        });
+
+        // Update both local and global state
+        const newState = {
+            status: 'thinking',
+            state: { final_response: {} as WeatherResponse } as WeatherAgentState,
+            metadata: {
+                step: 'Processing request...',
+                confidence: 0.5
+            }
+        };
+
+        setCurrentState(newState);
+        updateAgentState({
+            currentStep: 'Processing request...',
+            confidence: 0.5,
+            isProcessing: true,
+            intermediateResults: []
+        });
+
+        const response = await fetch(streamEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
+            },
+            body: JSON.stringify({
+                agent_name: name,
+                action: action.type,
+                context: context.payload,
+                stream: true
+            })
+        });
+
+        if (!response.ok) {
+            const message = `HTTP error! status: ${response.status}`;
+            throw new Error(message);
         }
-      };
-      
-      setCurrentState(newState);
-      updateAgentState({
-        currentStep: 'Processing request...',
-        confidence: 0.5,
-        isProcessing: true,
-        intermediateResults: []
-      });
 
-      const response = await fetch(streamEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
-        body: JSON.stringify({
-          agent_name: name,
-          action: action.type,
-          context: context.payload,
-          stream: true
-        })
-      });
+        // Ensure response body exists before accessing it
+        if (!response.body) {
+            throw new Error('Response body is missing');
+        }
 
-      if (!response.ok || !response.body) {
-        throw new Error('Stream error');
-      }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalResponseSet = false;
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let finalResponseSet = false;
+        while (activeStreamRef.current) {
+            const { value, done } = await reader.read();
+            if (done) break;
 
-      while (activeStreamRef.current) {
-        const { value, done } = await reader.read();
-        if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+            for (const line of lines) {
+                if (line.trim()) {
+                    try {
+                        const event = JSON.parse(line);
+                        if (event.type === 'update' && event.data) {
+                            const weatherData = {
+                                conditions: event.data.conditions || 'Unknown',
+                                temperature: parseFloat(event.data.temperature) || 0,
+                                wind_speed: parseFloat(event.data.wind_speed) || 0,
+                                wind_direction: event.data.wind_direction || 'N/A'
+                            } as WeatherResponse;
+              }
+                 // Check for other event types like 'thinking' or 'response'
+              else if (event.type === 'thinking') {  
+                setCurrentState({
+                  status: 'thinking',
+                  state: { final_response: {} as WeatherResponse } as WeatherAgentState,
+                  metadata: {
+                    step: 'Processing request...',
+                    confidence: 0.5
+                  }
+                });
 
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const event = JSON.parse(line);
-              if (event.type === 'update' && event.data) {
-                const weatherData = {
-                  conditions: event.data.conditions || 'Unknown',
-                  temperature: parseFloat(event.data.temperature) || 0,
-                  wind_speed: parseFloat(event.data.wind_speed) || 0,
-                  wind_direction: event.data.wind_direction || 'N/A'
-                };
+                updateAgentState({
+                  currentStep: event.data?.step || 'Thinking...', 
+                  confidence: event.data?.confidence || 0.5,
+                  isProcessing: true,
+                  intermediateResults: []
+                });
+              } else if (event.type === 'response') {
+                setCurrentState({
+                  status: 'response',
+                  state: { final_response: {} as WeatherResponse } as WeatherAgentState,
+                  metadata: {
+                    step: 'Received weather data',
+                    confidence: 1
+                  }
+                });
 
                 const newState = {
                   status: 'response',
                   state: {
-                    final_response: weatherData
+                    final_response: {} as WeatherResponse
                   } as WeatherAgentState,
                   metadata: {
                     step: 'Received weather data',
@@ -142,7 +183,14 @@ export function useCoAgentStateRender({
                   currentStep: 'Received weather data',
                   confidence: 1,
                   isProcessing: false,
-                  intermediateResults: [weatherData]
+                  intermediateResults: [{} as WeatherResponse]
+                });
+
+                updateAgentState({
+                  currentStep: event.data?.step || 'Response received', 
+                  confidence: event.data?.confidence || 1,
+                  isProcessing: false,
+                  intermediateResults: [{} as WeatherResponse]
                 });
                 
                 finalResponseSet = true;
@@ -156,23 +204,19 @@ export function useCoAgentStateRender({
 
     } catch (error) {
       console.error('Action error:', error);
-      setCurrentState({
-        status: 'error',
-        state: { final_response: {} as WeatherResponse } as WeatherAgentState,
-        metadata: {
-          step: 'Error occurred',
-          confidence: 0,
-          error: String(error)
-        }
-      });
       updateAgentState({
+        isThinking: false,
         currentStep: 'Error occurred',
         confidence: 0,
-        isProcessing: false,
-        intermediateResults: []
+        isProcessing: false
       });
     } finally {
       cleanup();
+      // Ensure thinking state is reset
+      updateAgentState({
+        isThinking: false,
+        isProcessing: false
+      });
     }
   }, [name, streamEndpoint, updateAgentState, cleanup]);
 
