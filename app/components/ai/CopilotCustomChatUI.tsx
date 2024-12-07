@@ -28,7 +28,7 @@ import { HumanApprovalModal } from "./HumanApprovalModal";
 import { useAgentUI } from "@/hooks/useAgentUI";
 import { useRealtimeActions } from "@/hooks/useRealTimeActions";
 import { useCoAgentStateRender } from "@/hooks/useCoAgentStateRender";
-import { ActionContext, ActionResult, AgentUIState, ViewTypeEnum } from "@/app/types/agent";
+import { ActionContext, ActionResult, ViewTypeEnum } from "@/app/types/agent";
 import { AgentUIProvider } from '@/app/providers/AGUIProvider';
 import { DynamicUIRenderer } from '@/app/components/ai/views/DynamicUIRenderer';
 import { useAgentStore } from '@/app/store/AgentStateStore'; // Import the store
@@ -118,29 +118,27 @@ export function CopilotCustomChatUI() {
   // Update UI state based on agent status
   useEffect(() => {
     if (!status || !state) return;
-
-    // Show the dynamic UI when the agent is thinking
+  
     if (status === 'thinking') {
       setShowDynamicUI(true);
-    }
-    // Hide it when a response is received OR when status is null/undefined
-    else if (status === 'response' || !status) {
+      updateUIState({
+        currentView: ViewTypeEnum.THINKING,
+        context: { step: streamState.currentStep }
+      });
+    } else if (status === 'response') {
+      // Once response is received, show the action or default view instead of thinking.
       setShowDynamicUI(false);
-    }
-
-    const newState = state && Object.keys(state).length > 0
-      ? {
-        currentView: 'action' as const,
+      updateUIState({
+        currentView: ViewTypeEnum.ACTION,
         actions: ['process', 'ignore'],
         context: state
-      }
-      : {
-        currentView: 'thinking' as const,
-        context: { step: streamState.currentStep }
-      };
-
-    updateUIState(newState as Partial<AgentUIState>);
-  }, [status, state, streamState.currentStep, updateUIState, setShowDynamicUI]); // Add setShowDynamicUI to the dependency array
+      });
+    } else {
+      // If no status, no UI
+      setShowDynamicUI(false);
+      updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+    }
+  }, [status, state, streamState.currentStep, updateUIState, setShowDynamicUI]);
 
 
   // Handle realtime actions with retry logic
