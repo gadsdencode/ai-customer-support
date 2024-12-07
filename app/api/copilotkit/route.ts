@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/copilotkit/route.ts
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/api/copilotkit/route.ts
+
 import {
   CopilotRuntime,
   OpenAIAdapter,
@@ -10,48 +13,70 @@ import OpenAI from 'openai';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import logger from '@/app/utils/logger';
-//import { ENDPOINTS } from '@/app/configs/endpoints';
-// import { useCopilotAction } from '@copilotkit/react-core';
 import { Action, CopilotAction } from '@/app/types/copilot';
 import { MessageRole } from '@copilotkit/runtime-client-gql';
-// Add interface for message structure
+
+// Enhanced message interface with optional properties
 export interface Message {
   role: MessageRole;
   content: string;
-  // Add other message properties as needed
+  id?: string;
+  timestamp?: string;
+  metadata?: Record<string, unknown>;
 }
 
-// Helper function to extract state from messages
+// Enhanced state extraction with error handling
 function extractStateFromMessages(messages: Message[]): any {
-  return {
-    lastMessage: messages[messages.length - 1]?.content || null,
-    messageCount: messages.length,
-    timestamp: new Date().toISOString()
-  };
+  try {
+    return {
+      lastMessage: messages[messages.length - 1]?.content || null,
+      messageCount: messages.length,
+      timestamp: new Date().toISOString(),
+      messageHistory: messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp || new Date().toISOString()
+      }))
+    };
+  } catch (error) {
+    logger.error('Error extracting state from messages:', { error });
+    return {
+      lastMessage: null,
+      messageCount: 0,
+      timestamp: new Date().toISOString(),
+      error: 'Failed to extract state'
+    };
+  }
 }
 
-// Environment configuration validation
+// Enhanced environment validation with detailed error messages
 const EnvSchema = z.object({
-  NEXT_PUBLIC_OPENAI_API_KEY: z.string().min(1),
-  NEXT_PUBLIC_REMOTE_ENDPOINT: z.string().url(),
+  NEXT_PUBLIC_OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
+  NEXT_PUBLIC_REMOTE_ENDPOINT: z.string().url('Valid remote endpoint URL is required'),
 });
 
-// Type-safe environment variables
-/*const env = EnvSchema.parse({
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  NEXT_PUBLIC_REMOTE_ENDPOINT: `${ENDPOINTS.PRODUCTION.BASE}/copilotkit_remote`,
-});*/
+// Validate environment variables with error handling
+const env = (() => {
+  try {
+    return EnvSchema.parse({
+      NEXT_PUBLIC_OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
+      NEXT_PUBLIC_REMOTE_ENDPOINT: process.env.NEXT_PUBLIC_REMOTE_ENDPOINT || '',
+    });
+  } catch (error) {
+    logger.error('Environment validation failed:', { error });
+    throw new Error('Invalid environment configuration');
+  }
+})();
 
-const env = EnvSchema.parse({
-  NEXT_PUBLIC_OPENAI_API_KEY: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
-  NEXT_PUBLIC_REMOTE_ENDPOINT: process.env.NEXT_PUBLIC_REMOTE_ENDPOINT || '',
+// Initialize OpenAI with error handling
+const openai = new OpenAI({ 
+  apiKey: env.NEXT_PUBLIC_OPENAI_API_KEY,
+  timeout: 30000, // 30 second timeout
+  maxRetries: 3
 });
-
-// Initialize services
-const openai = new OpenAI({ apiKey: env.NEXT_PUBLIC_OPENAI_API_KEY || '' });
 const serviceAdapter = new OpenAIAdapter({ openai });
 
-// Define your default actions
+// Enhanced default actions with proper error handling and typing
 const defaultActions: CopilotAction[] = [
   {
     name: "sendMessage",
@@ -63,9 +88,23 @@ const defaultActions: CopilotAction[] = [
         description: "The message content"
       }
     ],
-    handler: async (args: any) => {
-      // Implement the handler logic here
-      return { success: true, data: args };
+    handler: async (args: { message: string }) => {
+      try {
+        if (!args.message?.trim()) {
+          throw new Error('Message content is required');
+        }
+        return { 
+          success: true, 
+          data: args,
+          timestamp: new Date().toISOString()
+        };
+      } catch (error) {
+        logger.error('Send message handler error:', { error, args });
+        return { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
     }
   },
   {
@@ -83,25 +122,36 @@ const defaultActions: CopilotAction[] = [
         description: "The current runnable config"
       }
     ],
-    handler: async (args: { messages: Message[]; config: any }) => {  // remove io
-      const state = extractStateFromMessages(args.messages);
-      return { success: true, state };  // just return the state
+    handler: async (args: { messages: Message[]; config: any }) => {
+      try {
+        const state = extractStateFromMessages(args.messages);
+        return { 
+          success: true, 
+          state,
+          timestamp: new Date().toISOString()
+        };
+      } catch (error) {
+        logger.error('Emit state handler error:', { error, args });
+        return { 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+      }
     }
   }
 ];
 
-
-// Initialize the CopilotRuntime instance with remote action endpoints
+// Initialize CopilotRuntime with proper type casting and configuration
 const runtime = new CopilotRuntime({
   actions: defaultActions as unknown as Action<CopilotAction[]>[],
   remoteActions: [
     {
       url: env.NEXT_PUBLIC_REMOTE_ENDPOINT,
-    },
+    }
   ],
 });
 
-// Base handler for POST requests
+// Enhanced POST handler with detailed error handling
 export async function POST(req: NextRequest) {
   try {
     const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
@@ -113,14 +163,30 @@ export async function POST(req: NextRequest) {
     logger.info('Processing Copilot Runtime Request', {
       method: req.method,
       url: req.url,
+      timestamp: new Date().toISOString()
     });
 
-    return handleRequest(req);
+    const response = await handleRequest(req);
+    
+    logger.info('Request processed successfully', {
+      status: response.status,
+      timestamp: new Date().toISOString()
+    });
+
+    return response;
   } catch (error) {
-    logger.error('API Route Error:', { error });
+    logger.error('API Route Error:', { 
+      error, 
+      timestamp: new Date().toISOString(),
+      stack: error instanceof Error ? error.stack : undefined
+    });
 
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { 
+        error: 'Internal Server Error',
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

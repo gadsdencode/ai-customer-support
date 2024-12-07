@@ -18,7 +18,7 @@ const { toast } = useToast();
       if (!topic || topic.length < 5) {
         toast({
           title: "Research Error",
-          description: `Sorry, Zapp needs Your question must be at least 5 characters long.`,
+          description: `Sorry, AI needs a question that is at least 5 characters long.`,
           variant: "destructive",
           duration: 3000,
         });
@@ -29,7 +29,7 @@ const { toast } = useToast();
         const result = await research(topic);
         toast({
           title: "✅ Research Complete",
-          description: `Zapp has successfully researched your question!`,
+          description: `AI has successfully researched your question!`,
           variant: "default",
           duration: 3000,
 
@@ -40,7 +40,7 @@ const { toast } = useToast();
         console.error('Error conducting research:', error);
         toast({
           title: "Error",
-          description: `Sorry, Zapp wasn't able to conduct the requested research. Please try again.`,
+          description: `Sorry, AI wasn't able to conduct the requested research. Please try again.`,
           variant: "destructive",
           duration: 3000,
 
@@ -49,7 +49,7 @@ const { toast } = useToast();
         throw new Error('Failed to conduct research.');
       }
     },
-    render: ({ status }) => (status === 'complete' ? '✅ Research Complete!' : `One moment, Zapp is researching your question...`),
+    render: ({ status }) => (status === 'complete' ? '✅ Research Complete!' : `One moment, AI is researching your question...`),
   });
 };
 

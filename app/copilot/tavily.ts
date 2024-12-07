@@ -2,28 +2,47 @@
 
 import OpenAI from "openai";
 
-const TAVILY_API = process.env.NEXT_PUBLIC_TAVILY_API_KEY;
+const TAVILY_API = process.env.NEXT_PUBLIC_TAVILY_API_KEY || '';
+if (!TAVILY_API) {
+  throw new Error("Missing TAVILY_API_KEY environment variable.");
+}
 
 export async function research(query: string) {
+  if (!query) {
+    throw new Error('Query cannot be empty.');
+  }
 
-  const response = await fetch("https://api.tavily.com/search", {
-    method: "POST",
+  const response = await fetch('https://api.tavily.com/search', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TAVILY_API}`
     },
     body: JSON.stringify({
+      query: query,
       api_key: TAVILY_API,
-      query,
-      search_depth: "basic",
+      search_depth: "advanced",
       include_answer: true,
       include_images: true,
       include_raw_content: false,
-      max_results: 20,
+      max_results: 25,
     }),
   });
 
+  // Check if the response was successful
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error("Tavily API response error:", errorData);
+    throw new Error(`Tavily API request failed with status ${response.status}: ${JSON.stringify(errorData)}`);
+  }
+
   const responseJson = await response.json();
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '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';
+  const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+
+  if (!OPENAI_API_KEY) {
+    throw new Error("Missing NEXT_PUBLIC_OPENAI_API_KEY environment variable.");
+  }
+
   const openai = new OpenAI({ apiKey: OPENAI_API_KEY, dangerouslyAllowBrowser: true });
 
   console.log("TAVILY RESPONSE", responseJson);
@@ -32,12 +51,12 @@ export async function research(query: string) {
     messages: [
       {
         role: "system",
-        content: `Summarize the following JSON to answer the research query \`"${query}"\`: ${JSON.stringify(
+        content: `Provide detailed answers based on the following JSON to answer the research query \`"${query}"\`: ${JSON.stringify(
           responseJson,
-        )} in plain English. Make sure to include the links to all images and the sources of the information you provide.`,
+        )} in plain English. Note your sources and links as you would for a professional research paper.`,
       },
     ],
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
   });
 
   console.log("SUMMARY", completion.choices[0].message.content);

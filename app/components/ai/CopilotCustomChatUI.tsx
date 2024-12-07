@@ -29,11 +29,11 @@ import { useAgentUI } from "@/hooks/useAgentUI";
 import { useRealtimeActions } from "@/hooks/useRealTimeActions";
 import { useCoAgentStateRender } from "@/hooks/useCoAgentStateRender";
 import { ActionContext, ActionResult, AgentUIState, ViewTypeEnum } from "@/app/types/agent";
-import { ENDPOINTS } from "@/app/configs/endpoints";
 import { AgentUIProvider } from '@/app/providers/AGUIProvider';
-// import AGUIShowcase from '@/app/components/ai/views/AGUIShowcase';
 import { DynamicUIRenderer } from '@/app/components/ai/views/DynamicUIRenderer';
-// import CoAgentStateDisplay from '@/app/components/ai/CoAgentStateDisplay';
+import { useAgentStore } from '@/app/store/AgentStateStore'; // Import the store
+import { ENDPOINTS } from "@/app/configs/endpoints";
+
 
 export function CopilotCustomChatUI() {
   // Initialize hooks and state
@@ -43,6 +43,23 @@ export function CopilotCustomChatUI() {
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { isProcessing } = useRealtimeActions();
+
+  // Get showDynamicUI and setShowDynamicUI from the store
+  const showDynamicUI = useAgentStore(state => state.state.showDynamicUI);
+  const setShowDynamicUI = useAgentStore(state => state.setShowDynamicUI);
+  const isThinking = useAgentStore(state => state.state.isThinking);
+
+  const renderDynamicContent = () => {
+    if (isThinking) {
+      return (
+        <React.Fragment key="dynamic-ui">
+          {renderCoAgentUI()}
+          <DynamicUIRenderer />
+        </React.Fragment>
+      );
+    }
+    return null;
+  };
 
   // Initialize chat and agent state
   const {
@@ -67,7 +84,7 @@ export function CopilotCustomChatUI() {
     streamState
   } = useCoAgentStateRender({
     name: "weather_agent",
-    streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
+    streamEndpoint: `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`,
     render: ({ status, state }) => {
       return (
         <motion.div
@@ -102,19 +119,29 @@ export function CopilotCustomChatUI() {
   useEffect(() => {
     if (!status || !state) return;
 
+    // Show the dynamic UI when the agent is thinking
+    if (status === 'thinking') {
+      setShowDynamicUI(true);
+    }
+    // Hide it when a response is received OR when status is null/undefined
+    else if (status === 'response' || !status) {
+      setShowDynamicUI(false);
+    }
+
     const newState = state && Object.keys(state).length > 0
       ? {
-          currentView: 'action' as const,
-          actions: ['process', 'ignore'],
-          context: state
-        }
+        currentView: 'action' as const,
+        actions: ['process', 'ignore'],
+        context: state
+      }
       : {
-          currentView: 'thinking' as const,
-          context: { step: streamState.currentStep }
-        };
+        currentView: 'thinking' as const,
+        context: { step: streamState.currentStep }
+      };
 
     updateUIState(newState as Partial<AgentUIState>);
-  }, [status, state, streamState.currentStep, updateUIState]);
+  }, [status, state, streamState.currentStep, updateUIState, setShowDynamicUI]); // Add setShowDynamicUI to the dependency array
+
 
   // Handle realtime actions with retry logic
   const handleRealtimeAction = useCallback(
@@ -127,9 +154,9 @@ export function CopilotCustomChatUI() {
           if (!actionName) {
             throw new Error("Action name is required");
           }
-
+      
           const response = await fetch(
-            `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
+            `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`, // This will now correctly construct the URL
             {
               method: "POST",
               credentials: "include",
@@ -268,21 +295,21 @@ export function CopilotCustomChatUI() {
   const messageVariants = useMemo(
     () => ({
       hidden: { opacity: 0, y: 20, scale: 0.95 },
-      visible: { 
-        opacity: 1, 
-        y: 0, 
+      visible: {
+        opacity: 1,
+        y: 0,
         scale: 1,
-        transition: { 
+        transition: {
           type: "spring",
           stiffness: 260,
           damping: 20
         }
       },
-      exit: { 
-        opacity: 0, 
-        y: -20, 
+      exit: {
+        opacity: 0,
+        y: -20,
         scale: 0.95,
-        transition: { 
+        transition: {
           duration: 0.2,
           ease: "easeInOut"
         }
@@ -361,43 +388,13 @@ export function CopilotCustomChatUI() {
       >
         <CardContent className="flex flex-col h-full p-6">
           <ErrorBoundary>
-            {/* <AGUIShowcase /> */}
-            <div className="mb-4 space-y-4">
-              
-              {/* Keep renderCoAgentUI if you still need it */}
-              {renderCoAgentUI()}
-            </div>
-            
+
             <div className="flex-grow pr-4 custom-scrollbar overflow-y-auto" ref={scrollAreaRef}>
-              {needsApproval && (
-                <HumanApprovalModal
-                  isOpen={needsApproval}
-                  onClose={() => {
-                    setNeedsApproval(false);
-                    updateUIState({ currentView: ViewTypeEnum.APPROVAL });
-                  }}
-                  onApprove={async () => {
-                    if (pendingAction && uiState.context) {
-                      await executeAction(
-                        { type: pendingAction, payload: {} },
-                        { type: pendingAction, payload: uiState.context }
-                      );
-                      updateUIState({ currentView: ViewTypeEnum.APPROVAL });
-                    }
-                  }}
-                  onReject={() => {
-                    setNeedsApproval(false);
-                    setPendingAction(null);
-                    updateUIState({ currentView: ViewTypeEnum.APPROVAL });
-                  }}
-                  data={typeof pendingAction === 'string' ? { action: pendingAction } : {}}
-                />
-              )}
-              
+
+
               <AnimatePresence initial={false}>
                 {visibleMessages.map((message, index) => {
                   const { role, content } = message as TextMessage;
-
                   if (!content || content.trim() === "") {
                     return null;
                   }
@@ -440,11 +437,43 @@ export function CopilotCustomChatUI() {
                     </motion.div>
                   );
                 })}
-                <DynamicUIRenderer />
+
+                {/* Conditionally render the dynamic UI */}
+                {showDynamicUI && (
+                  <React.Fragment key="dynamic-ui">
+                    {renderCoAgentUI()}
+                    {renderDynamicContent()}
+                  </React.Fragment>
+                )}
+
+                {needsApproval && (
+                  <HumanApprovalModal
+                    isOpen={needsApproval}
+                    onClose={() => {
+                      setNeedsApproval(false);
+                      updateUIState({ currentView: ViewTypeEnum.APPROVAL });
+                    }}
+                    onApprove={async () => {
+                      if (pendingAction && uiState.context) {
+                        await executeAction(
+                          { type: pendingAction, payload: {} },
+                          { type: pendingAction, payload: uiState.context }
+                        );
+                        updateUIState({ currentView: ViewTypeEnum.APPROVAL });
+                      }
+                    }}
+                    onReject={() => {
+                      setNeedsApproval(false);
+                      setPendingAction(null);
+                      updateUIState({ currentView: ViewTypeEnum.APPROVAL });
+                    }}
+                    data={typeof pendingAction === 'string' ? { action: pendingAction } : {}}
+                  />
+                )}
               </AnimatePresence>
             </div>
           </ErrorBoundary>
-          
+
           <div className="flex items-center space-x-2 mt-4">
             <Input
               value={inputValue}
@@ -470,7 +499,7 @@ export function CopilotCustomChatUI() {
               )}
             </Button>
           </div>
-          
+
           <div className="flex justify-between mt-4">
             <Button
               variant="outline"
@@ -504,6 +533,6 @@ export function CopilotCustomChatUI() {
           </div>
         </CardContent>
       </Card>
-      </AgentUIProvider>
+    </AgentUIProvider>
   );
 }
