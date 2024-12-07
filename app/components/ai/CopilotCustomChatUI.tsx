@@ -214,14 +214,8 @@ export function CopilotCustomChatUI() {
     (error: unknown) => {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       console.error("Message send failed:", errorMessage);
-      toast({
-        title: "Communication Error",
-        description: `Failed to send message: ${errorMessage}`,
-        variant: "destructive",
-        duration: 5000,
-      });
     },
-    [toast]
+    []
   );
 
   // Handle message sending

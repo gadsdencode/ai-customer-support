@@ -7,6 +7,8 @@ import { useCopilotAction } from '@copilotkit/react-core';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import useAuth from '@/app/contexts/useAuth';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 // Initialize Supabase client
 const supabase: SupabaseClient = createClient(
@@ -227,35 +229,37 @@ const PollComponent: React.FC<PollComponentProps> = React.memo(({ pollId }) => {
           ))}
         </div>
         {!isVoted && user && (
-          <button
+          <Button
             onClick={handleVote}
             disabled={!selectedOption}
+            variant="outline"
             className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors disabled:bg-gray-300"
           >
             {t('vote')}
-          </button>
+          </Button>
         )}
         {isVoted && <p className="mt-4 text-center text-gray-600">{t('thankYouForVoting')}</p>}
         {!user && <p className="mt-4 text-center text-gray-600">{t('loginToVote')}</p>}
-        <button onClick={handleShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">
+        <Button onClick={handleShare} variant="outline" className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">
           {t('share')}
-        </button>
+        </Button>
         <div className="mt-6">
           <h3 className="text-xl font-semibold mb-2">{t('comments')}</h3>
           {user ? (
             <>
-              <textarea
+              <Textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 className="w-full p-2 border rounded-md"
                 placeholder={t('addComment')}
               />
-              <button
+              <Button
                 onClick={handleComment}
+                variant="outline"
                 className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
               >
                 {t('postComment')}
-              </button>
+              </Button>
             </>
           ) : (
             <p className="text-gray-600">{t('loginToComment')}</p>
