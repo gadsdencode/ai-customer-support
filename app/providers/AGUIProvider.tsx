@@ -26,7 +26,7 @@ export const AgentUIProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Create a single instance of the weather agent
   const weatherAgent = useCoAgentStateRender({
     name: 'weather_agent',
-    streamEndpoint: `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`,
+    streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
     render: () => null, // Base render function, components will provide their own
   });
 

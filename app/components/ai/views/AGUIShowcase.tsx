@@ -22,7 +22,7 @@ const EnhancedAgentCapabilitiesShowcase: React.FC = () => {
     streamState
   } = useCoAgentStateRender({
     name: "weather_agent",
-    streamEndpoint: `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.STREAM}`,
+    streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.STREAM}`,
     render: () => null
   });
 

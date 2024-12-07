@@ -27,7 +27,7 @@ export const useExecuteAction = () => {
         intermediateResults: []
       });
 
-      const response = await fetch(`${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`, {
+      const response = await fetch(`${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
