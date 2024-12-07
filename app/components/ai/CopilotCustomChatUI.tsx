@@ -84,7 +84,7 @@ export function CopilotCustomChatUI() {
     streamState
   } = useCoAgentStateRender({
     name: "weather_agent",
-    streamEndpoint: `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`,
+    streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
     render: ({ status, state }) => {
       return (
         <motion.div
@@ -156,7 +156,7 @@ export function CopilotCustomChatUI() {
           }
       
           const response = await fetch(
-            `${ENDPOINTS.LOCAL.BASE}${ENDPOINTS.LOCAL.ACTIONS}`, // This will now correctly construct the URL
+            `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`, // This will now correctly construct the URL
             {
               method: "POST",
               credentials: "include",
