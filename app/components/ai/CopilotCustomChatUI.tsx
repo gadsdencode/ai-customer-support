@@ -136,7 +136,7 @@ export function CopilotCustomChatUI() {
     } else {
       // If no status, no UI
       setShowDynamicUI(false);
-      updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+      updateUIState({ currentView: undefined });
     }
   }, [status, state, streamState.currentStep, updateUIState, setShowDynamicUI]);
 

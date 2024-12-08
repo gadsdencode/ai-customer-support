@@ -11,6 +11,9 @@ import { CopilotFeaturesProvider } from "./providers/CopilotFeaturesProvider";
 import { InteleosContextProvider } from "./contexts/InteleosContext";
 import { Toaster } from "@/components/ui/toaster";
 
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/ui/app-sidebar"
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -33,14 +36,20 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        
         <CopilotKit runtimeUrl="/api/copilotkit">
           <InteleosContextProvider>
             <CopilotFeaturesProvider>
+            <SidebarProvider>
+            <AppSidebar />
+            <SidebarTrigger />
               {children}
               <Toaster />
+              </SidebarProvider>
             </CopilotFeaturesProvider>
           </InteleosContextProvider>
         </CopilotKit>
+        
       </body>
     </html>
   );
