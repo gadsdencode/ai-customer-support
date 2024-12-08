@@ -83,7 +83,7 @@ export function CopilotCustomChatUI() {
     state,
     streamState
   } = useCoAgentStateRender({
-    name: "weather_agent",
+    name: "questions_agent",
     streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
     render: ({ status, state }) => {
       return (
