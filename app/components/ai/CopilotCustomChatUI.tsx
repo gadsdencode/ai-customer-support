@@ -46,7 +46,7 @@ export function CopilotCustomChatUI() {
 
   // Get showDynamicUI and setShowDynamicUI from the store
   const showDynamicUI = useAgentStore(state => state.state.showDynamicUI);
-  const setShowDynamicUI = useAgentStore(state => state.setShowDynamicUI);
+ // const setShowDynamicUI = useAgentStore(state => state.setShowDynamicUI);
   const isThinking = useAgentStore(state => state.state.isThinking);
 
   const renderDynamicContent = () => {
@@ -79,9 +79,9 @@ export function CopilotCustomChatUI() {
     setPendingAction,
     executeAction,
     renderDynamicUI: renderCoAgentUI,
-    status,
-    state,
-    streamState
+    // status,
+    // state,
+    // streamState
   } = useCoAgentStateRender({
     name: "questions_agent",
     streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
@@ -116,7 +116,7 @@ export function CopilotCustomChatUI() {
   const { uiState, updateUIState } = useAgentUI();
 
   // Update UI state based on agent status
-  useEffect(() => {
+  /*useEffect(() => {
     if (!status || !state) return;
   
     if (status === 'thinking') {
@@ -127,18 +127,30 @@ export function CopilotCustomChatUI() {
       });
     } else if (status === 'response') {
       // Once response is received, show the action or default view instead of thinking.
-      setShowDynamicUI(false);
+      setShowDynamicUI(true);
       updateUIState({
         currentView: ViewTypeEnum.ACTION,
         actions: ['process', 'ignore'],
         context: state
+      });
+    } else if (status === 'error') {
+      setShowDynamicUI(false);
+      updateUIState({
+        currentView: ViewTypeEnum.ERROR,
+        context: { error: state }
+      });
+    } else if (status === 'action') {
+      setShowDynamicUI(true);
+      updateUIState({
+        currentView: ViewTypeEnum.ACTION,
+        context: { action: state }
       });
     } else {
       // If no status, no UI
       setShowDynamicUI(false);
       updateUIState({ currentView: undefined });
     }
-  }, [status, state, streamState.currentStep, updateUIState, setShowDynamicUI]);
+  }, [status, state, streamState.currentStep, updateUIState, setShowDynamicUI]);*/
 
 
   // Handle realtime actions with retry logic
@@ -208,20 +220,23 @@ export function CopilotCustomChatUI() {
   );
 
   // Handle errors with toast notifications
-  const handleError = useCallback(
+  /*const handleError = useCallback(
     (error: unknown) => {
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
       console.error("Message send failed:", errorMessage);
     },
     []
-  );
+  );*/
 
   // Handle message sending
   const sendMessageHandler = useCallback(
     async (content: string) => {
-      if (!content?.trim()) return;
+      if (!content.trim()) return;
 
       try {
+        // 1. Immediately show "Processing..." animation
+        updateUIState({ currentView: ViewTypeEnum.THINKING });
+
         const message = new TextMessage({
           content,
           role: Role.User,
@@ -231,6 +246,7 @@ export function CopilotCustomChatUI() {
         appendMessage(message);
         setInputValue("");
 
+        // Send action to process user message
         await executeAction(
           { type: "processMessage", payload: { message: content } },
           { type: "processMessage", payload: { message: content } }
@@ -247,6 +263,12 @@ export function CopilotCustomChatUI() {
           throw new Error(result?.error || "Message sending failed");
         }
 
+        // Once the response arrives, we can stop the "Processing..." animation
+        // by returning the UI to a default or action state.
+        // For example, if you have a next step (like showing result UI), do that here.
+        // If you just want to revert to no animation, use DEFAULT:
+        updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+
         if (result.data && typeof result.data.response === 'string') {
           const responseMessage = new TextMessage({
             content: result.data.response,
@@ -261,11 +283,31 @@ export function CopilotCustomChatUI() {
           );
         }
       } catch (error) {
-        handleError(error);
+        // Handle errors
+        console.error("Message send failed:", error);
+        // On error, revert UI state:
+        updateUIState({ currentView: ViewTypeEnum.DEFAULT });
       }
     },
-    [appendMessage, handleRealtimeAction, setInputValue, handleError, executeAction]
+    [appendMessage, handleRealtimeAction, setInputValue, executeAction, updateUIState]
   );
+
+  // If there's an existing effect updating UI state based on status, remove it or limit its scope:
+  // For example, if this effect previously set the UI state to THINKING or ACTION based on `status`:
+  // useEffect(() => {
+    // If you have logic that sets thinking/action states based on `status` or `state`,
+    // remove or simplify it so it doesn't conflict with the new strict enforcement.
+
+    // Example (remove or comment out):
+    // if (status === 'thinking') {
+    //   updateUIState({ currentView: ViewTypeEnum.THINKING, context: { step: streamState.currentStep } });
+    // } else if (status === 'response') {
+    //   updateUIState({ currentView: ViewTypeEnum.ACTION, actions: ['process', 'ignore'], context: state });
+    // } else {
+    //   updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+    // }
+
+ // }, [status, state, streamState, updateUIState]);
 
   // Handle scrolling
   const scrollToBottom = useCallback(() => {

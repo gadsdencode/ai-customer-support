@@ -8,6 +8,7 @@ export enum ViewTypeEnum {
   THINKING = 'thinking',
   ACTION = 'action',
   ERROR = 'error',
+  RESPONSE = 'response',
 }
 
 export interface AgentUIState {
