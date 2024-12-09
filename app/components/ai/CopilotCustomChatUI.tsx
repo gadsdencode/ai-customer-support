@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// File: src/components/chat/CopilotCustomChatUI.tsx
+// File: src/components/ai/CopilotCustomChatUI.tsx
 "use client";
 
 import React, {
@@ -26,14 +26,14 @@ import ErrorBoundary from "@/app/components/errors/ErrorBoundary";
 import { useToast } from "@/hooks/use-toast";
 import { HumanApprovalModal } from "./HumanApprovalModal";
 import { useAgentUI } from "@/hooks/useAgentUI";
-import { useRealtimeActions } from "@/hooks/useRealTimeActions";
+// import { useRealtimeActions } from "@/hooks/useRealTimeActions"; // Removed as per latest code
 import { useCoAgentStateRender } from "@/hooks/useCoAgentStateRender";
 import { ActionContext, ActionResult, ViewTypeEnum } from "@/app/types/agent";
 import { AgentUIProvider } from '@/app/providers/AGUIProvider';
 import { DynamicUIRenderer } from '@/app/components/ai/views/DynamicUIRenderer';
 import { useAgentStore } from '@/app/store/AgentStateStore'; // Import the store
 import { ENDPOINTS } from "@/app/configs/endpoints";
-
+import { ProcessingAnimation } from '@/app/components/ai/views/ProcessingAnimation'; // Import the ProcessingAnimation component
 
 export function CopilotCustomChatUI() {
   // Initialize hooks and state
@@ -42,11 +42,15 @@ export function CopilotCustomChatUI() {
   const chatCardRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const { isProcessing } = useRealtimeActions();
 
-  // Get showDynamicUI and setShowDynamicUI from the store
+  // Local state to manage processing animation
+  // const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  // const [showProcessing, setShowProcessing] = useState(false);
+  const [isResponding, setIsResponding] = useState(false);
+  const [responseRendered, setResponseRendered] = useState(false);
+
+  // Get showDynamicUI from the store
   const showDynamicUI = useAgentStore(state => state.state.showDynamicUI);
- // const setShowDynamicUI = useAgentStore(state => state.setShowDynamicUI);
   const isThinking = useAgentStore(state => state.state.isThinking);
 
   const renderDynamicContent = () => {
@@ -79,11 +83,8 @@ export function CopilotCustomChatUI() {
     setPendingAction,
     executeAction,
     renderDynamicUI: renderCoAgentUI,
-    // status,
-    // state,
-    // streamState
   } = useCoAgentStateRender({
-    name: "questions_agent",
+    name: "inteleos_agent",
     streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
     render: ({ status, state }) => {
       return (
@@ -115,44 +116,6 @@ export function CopilotCustomChatUI() {
   // Initialize UI state
   const { uiState, updateUIState } = useAgentUI();
 
-  // Update UI state based on agent status
-  /*useEffect(() => {
-    if (!status || !state) return;
-  
-    if (status === 'thinking') {
-      setShowDynamicUI(true);
-      updateUIState({
-        currentView: ViewTypeEnum.THINKING,
-        context: { step: streamState.currentStep }
-      });
-    } else if (status === 'response') {
-      // Once response is received, show the action or default view instead of thinking.
-      setShowDynamicUI(true);
-      updateUIState({
-        currentView: ViewTypeEnum.ACTION,
-        actions: ['process', 'ignore'],
-        context: state
-      });
-    } else if (status === 'error') {
-      setShowDynamicUI(false);
-      updateUIState({
-        currentView: ViewTypeEnum.ERROR,
-        context: { error: state }
-      });
-    } else if (status === 'action') {
-      setShowDynamicUI(true);
-      updateUIState({
-        currentView: ViewTypeEnum.ACTION,
-        context: { action: state }
-      });
-    } else {
-      // If no status, no UI
-      setShowDynamicUI(false);
-      updateUIState({ currentView: undefined });
-    }
-  }, [status, state, streamState.currentStep, updateUIState, setShowDynamicUI]);*/
-
-
   // Handle realtime actions with retry logic
   const handleRealtimeAction = useCallback(
     async (actionName: string, parameters: Record<string, any>): Promise<ActionResult> => {
@@ -166,7 +129,7 @@ export function CopilotCustomChatUI() {
           }
       
           const response = await fetch(
-            `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`, // This will now correctly construct the URL
+            `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`, // Correctly construct the URL
             {
               method: "POST",
               credentials: "include",
@@ -219,95 +182,77 @@ export function CopilotCustomChatUI() {
     []
   );
 
-  // Handle errors with toast notifications
-  /*const handleError = useCallback(
-    (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      console.error("Message send failed:", errorMessage);
-    },
-    []
-  );*/
-
-  // Handle message sending
+  // Handle processing animation
   const sendMessageHandler = useCallback(
     async (content: string) => {
       if (!content.trim()) return;
-
+  
       try {
-        // 1. Immediately show "Processing..." animation
-        updateUIState({ currentView: ViewTypeEnum.THINKING });
-
-        const message = new TextMessage({
+        setIsResponding(true);
+        setResponseRendered(false);
+        setInputValue("");
+  
+        const userMessage = new TextMessage({
           content,
           role: Role.User,
           id: `msg-${Date.now()}`,
         });
-
-        appendMessage(message);
-        setInputValue("");
-
-        // Send action to process user message
+        appendMessage(userMessage);
+  
+        // Execute actions
         await executeAction(
           { type: "processMessage", payload: { message: content } },
           { type: "processMessage", payload: { message: content } }
         );
-
+  
         const context: ActionContext = {
           type: "sendMessage",
-          payload: { message: content }
+          payload: { message: content },
         };
-
+  
         const result = await handleRealtimeAction("sendMessage", context);
-
+  
         if (!result?.success) {
           throw new Error(result?.error || "Message sending failed");
         }
-
-        // Once the response arrives, we can stop the "Processing..." animation
-        // by returning the UI to a default or action state.
-        // For example, if you have a next step (like showing result UI), do that here.
-        // If you just want to revert to no animation, use DEFAULT:
-        updateUIState({ currentView: ViewTypeEnum.DEFAULT });
-
-        if (result.data && typeof result.data.response === 'string') {
+  
+        if (result.data && typeof result.data.response === "string") {
           const responseMessage = new TextMessage({
             content: result.data.response,
             role: Role.Assistant,
             id: `msg-${Date.now()}-response`,
           });
           appendMessage(responseMessage);
-
-          await executeAction(
-            { type: "processResponse", payload: { response: result.data.response } },
-            { type: "processResponse", payload: { response: result.data.response } }
-          );
+          
+          // Wait for the response to be rendered
+          setTimeout(() => {
+            setResponseRendered(true);
+          }, 100);
         }
       } catch (error) {
-        // Handle errors
         console.error("Message send failed:", error);
-        // On error, revert UI state:
-        updateUIState({ currentView: ViewTypeEnum.DEFAULT });
+        const errorMessage = new TextMessage({
+          content: "An error occurred while processing your request.",
+          role: Role.Assistant,
+          id: `error-${Date.now()}`,
+        });
+        appendMessage(errorMessage);
+        setResponseRendered(true);
       }
     },
-    [appendMessage, handleRealtimeAction, setInputValue, executeAction, updateUIState]
+    [appendMessage, handleRealtimeAction, executeAction]
   );
 
-  // If there's an existing effect updating UI state based on status, remove it or limit its scope:
-  // For example, if this effect previously set the UI state to THINKING or ACTION based on `status`:
-  // useEffect(() => {
-    // If you have logic that sets thinking/action states based on `status` or `state`,
-    // remove or simplify it so it doesn't conflict with the new strict enforcement.
-
-    // Example (remove or comment out):
-    // if (status === 'thinking') {
-    //   updateUIState({ currentView: ViewTypeEnum.THINKING, context: { step: streamState.currentStep } });
-    // } else if (status === 'response') {
-    //   updateUIState({ currentView: ViewTypeEnum.ACTION, actions: ['process', 'ignore'], context: state });
-    // } else {
-    //   updateUIState({ currentView: ViewTypeEnum.DEFAULT });
-    // }
-
- // }, [status, state, streamState, updateUIState]);
+  useEffect(() => {
+    if (responseRendered && isResponding) {
+      // Add a delay to ensure the response is visible
+      const timer = setTimeout(() => {
+        setIsResponding(false);
+      }, 1000); // Adjust this value as needed
+  
+      return () => clearTimeout(timer);
+    }
+  }, [responseRendered, isResponding]);
 
   // Handle scrolling
   const scrollToBottom = useCallback(() => {
@@ -422,11 +367,8 @@ export function CopilotCustomChatUI() {
       >
         <CardContent className="flex flex-col h-full p-6">
           <ErrorBoundary>
-
             <div className="flex-grow pr-4 custom-scrollbar overflow-y-auto" ref={scrollAreaRef}>
-
-
-              <AnimatePresence initial={false}>
+              <AnimatePresence initial={false} mode="sync">
                 {visibleMessages.map((message, index) => {
                   const { role, content } = message as TextMessage;
                   if (!content || content.trim() === "") {
@@ -440,6 +382,11 @@ export function CopilotCustomChatUI() {
                       initial="hidden"
                       animate="visible"
                       exit="exit"
+                      onAnimationComplete={() => {
+                        if (role === Role.Assistant) {
+                          setResponseRendered(true);
+                        }
+                      }}
                       className={`flex items-start space-x-4 mb-4 ${
                         role === Role.User ? "justify-end" : "justify-start"
                       }`}
@@ -471,6 +418,21 @@ export function CopilotCustomChatUI() {
                     </motion.div>
                   );
                 })}
+
+                {/* Conditionally render the ProcessingAnimation component */}
+                <AnimatePresence mode="wait">
+                  {isResponding && (
+                    <motion.div
+                      key="processing"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ProcessingAnimation />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Conditionally render the dynamic UI */}
                 {showDynamicUI && (
@@ -509,29 +471,30 @@ export function CopilotCustomChatUI() {
           </ErrorBoundary>
 
           <div className="flex items-center space-x-2 mt-4">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !isProcessing) {
-                  e.preventDefault();
-                  sendMessageHandler(inputValue);
-                }
-              }}
-              className="bg-gray-800/50 border-gray-700 text-gray-200 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Type your message..."
-            />
-            <Button
-              onClick={() => sendMessageHandler(inputValue)}
-              disabled={isProcessing || inputValue.trim() === ""}
-              className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
-            >
-              {isProcessing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
+          <Input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isResponding) {
+                e.preventDefault();
+                sendMessageHandler(inputValue);
+              }
+            }}
+            disabled={isResponding}
+            className="bg-gray-800/50 border-gray-700 text-gray-200 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Type your message..."
+          />
+          <Button
+            onClick={() => sendMessageHandler(inputValue)}
+            disabled={isResponding || inputValue.trim() === ""}
+            className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300 flex items-center justify-center"
+          >
+            {isResponding ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </Button>
           </div>
 
           <div className="flex justify-between mt-4">

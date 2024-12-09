@@ -12,8 +12,8 @@ export const ENDPOINTS = {
     ROOT: '/'
   },
   PRODUCTION: {
-    BASE: 'https://web-production-7cd0b.up.railway.app',  // Removed /copilotkit_remote from base
-    BASE_ASSISTANTS: 'https://web-production-7cd0b.up.railway.app',
+    BASE: 'https://web-dev-461a.up.railway.app',  // Removed /copilotkit_remote from base
+    BASE_ASSISTANTS: 'https://web-dev-461a.up.railway.app',
     ASSISTANTS: '/copilotkit_remote/assistants/search',
     ACTIONS: '/copilotkit_remote/info',  // Keep the path segment
     STREAM: '/copilotkit_remote',

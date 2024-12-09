@@ -23,9 +23,9 @@ const AgentUIContext = createContext<AgentUIContextType | undefined>(undefined);
 export const AgentUIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [uiState, setUIState] = useState<AgentUIState>(initialState);
 
-  // Create a single instance of the weather agent
+  // Create a single instance of the inteleos agent
   const weatherAgent = useCoAgentStateRender({
-    name: 'questions_agent',
+    name: 'inteleos_agent',
     streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
     render: () => null, // Base render function, components will provide their own
   });

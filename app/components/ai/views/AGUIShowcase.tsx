@@ -21,7 +21,7 @@ const EnhancedAgentCapabilitiesShowcase: React.FC = () => {
     state,
     streamState
   } = useCoAgentStateRender({
-    name: "questions_agent",
+    name: "inteleos_agent",
     streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.STREAM}`,
     render: () => null
   });
