@@ -46,7 +46,7 @@ export function CopilotCustomChatUI() {
 
   // Get showDynamicUI and setShowDynamicUI from the store
   const showDynamicUI = useAgentStore(state => state.state.showDynamicUI);
-  const setShowDynamicUI = useAgentStore(state => state.setShowDynamicUI);
+ // const setShowDynamicUI = useAgentStore(state => state.setShowDynamicUI);
   const isThinking = useAgentStore(state => state.state.isThinking);
 
   const renderDynamicContent = () => {
@@ -79,9 +79,9 @@ export function CopilotCustomChatUI() {
     setPendingAction,
     executeAction,
     renderDynamicUI: renderCoAgentUI,
-    status,
-    state,
-    streamState
+    // status,
+    // state,
+    // streamState
   } = useCoAgentStateRender({
     name: "questions_agent",
     streamEndpoint: `${ENDPOINTS.PRODUCTION.BASE}${ENDPOINTS.PRODUCTION.ACTIONS}`,
