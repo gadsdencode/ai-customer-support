@@ -7,6 +7,7 @@ export function middleware(req: NextRequest) {
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_FRONTEND_URL,
     'http://localhost:3000',
+    //'https://web-dev-461a.up.railway.app',
   ].filter(Boolean);
 
   if (origin && !allowedOrigins.includes(origin)) {

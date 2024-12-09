@@ -122,6 +122,25 @@ body {
 }
 }
 
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+  background-size: 200% 100%;
+}
+
+.processing-animation {
+  position: relative;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.processing-animation::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.1), transparent);
+  animation: shimmer 2s infinite;
+}
+
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
