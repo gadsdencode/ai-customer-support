@@ -1,6 +1,5 @@
 // app/page.tsx
 
-import Image from "next/image";
 import { CopilotCustomChatUI } from "./components/ai/CopilotCustomChatUI";
 // import CopilotChatUI from "./copilot/CopilotChatUI";
 export default function Home() {
