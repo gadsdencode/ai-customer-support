@@ -222,9 +222,12 @@ export function CopilotCustomChatUI() {
           responseContent = result.data.response;
         } else if (typeof result.data === "string") {
           responseContent = result.data;
+        } else if (result.data) {
+          // Handle case where response might be directly in data
+          responseContent = JSON.stringify(result.data);
         }
-  
-        if (responseContent) {
+
+        if (responseContent && responseContent.trim() !== "") {
           const responseMessage = new TextMessage({
             content: responseContent,
             role: Role.Assistant,
@@ -237,7 +240,8 @@ export function CopilotCustomChatUI() {
             setResponseRendered(true);
           }, 100);
         } else {
-          throw new Error("No response content received");
+          console.error("Response data:", result.data);
+          throw new Error("Invalid or empty response received");
         }
       } catch (error) {
         console.error("Message send failed:", error);
