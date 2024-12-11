@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/copilotkit/route.ts
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/api/copilotkit/route.ts
+
 import {
   CopilotRuntime,
   OpenAIAdapter,
@@ -12,10 +15,6 @@ import { z } from 'zod';
 import logger from '@/app/utils/logger';
 import { Action, CopilotAction } from '@/app/types/copilot';
 import { MessageRole } from '@copilotkit/runtime-client-gql';
-
-// Import LangSmith tracing tools
-import { traceable } from 'langsmith/traceable';
-import { wrapOpenAI } from 'langsmith/wrappers';
 
 // Enhanced message interface with optional properties
 export interface Message {
@@ -75,12 +74,7 @@ const openai = new OpenAI({
   timeout: 30000, // 30 second timeout
   maxRetries: 3
 });
-
-// Wrap OpenAI instance to enable LangSmith tracing
-const tracedOpenAI = wrapOpenAI(openai);
-
-// Enhanced adapter to use traced OpenAI
-const serviceAdapter = new OpenAIAdapter({ openai: tracedOpenAI });
+const serviceAdapter = new OpenAIAdapter({ openai });
 
 // Enhanced default actions with proper error handling and typing
 const defaultActions: CopilotAction[] = [
@@ -157,6 +151,7 @@ const runtime = new CopilotRuntime({
   ],
 });
 
+// Enhanced POST handler with detailed error handling
 export async function POST(req: NextRequest) {
   try {
     const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
@@ -165,16 +160,13 @@ export async function POST(req: NextRequest) {
       endpoint: '/api/copilotkit',
     });
 
-    // Traceable wrapper around handleRequest for LangSmith observability
-    const tracedHandleRequest = traceable(handleRequest);
-
     logger.info('Processing Copilot Runtime Request', {
       method: req.method,
       url: req.url,
       timestamp: new Date().toISOString()
     });
 
-    const response = await tracedHandleRequest(req);
+    const response = await handleRequest(req);
     
     logger.info('Request processed successfully', {
       status: response.status,
