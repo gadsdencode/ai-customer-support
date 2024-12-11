@@ -49,4 +49,3 @@ const InstructionItem: React.FC<InstructionItemProps> = ({ icon, title, descript
 }
 
 export { Instructions }
-
