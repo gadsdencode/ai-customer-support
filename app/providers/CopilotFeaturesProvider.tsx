@@ -23,7 +23,7 @@ export function CopilotFeaturesProvider({ children }: CopilotFeaturesProviderPro
       email: 'john.doe@example.com',
       role: 'Developer',
       avatar: '/user-avatar.png',
-      company: 'Acme Inc.',
+      company: 'Inteleos',
       location: 'New York, NY',
       department: 'Engineering',
       industry: 'Technology',
@@ -42,8 +42,8 @@ export function CopilotFeaturesProvider({ children }: CopilotFeaturesProviderPro
       { id: 7, name: 'George Clooney', role: 'Actor' },
       { id: 8, name: 'Hannah Montana', role: 'Singer' },
       { id: 9, name: 'Ian McKellen', role: 'Actor' },
-      { id: 10, name: 'Jane Austen', role: 'Writer' },
-      { id: 11, name: 'John Doe', role: 'Developer', avatar: '/user-avatar.png', company: 'Acme Inc.', location: 'New York, NY', department: 'Engineering', industry: 'Technology', personalInterests: ['Coding', 'Reading', 'Traveling'], professionalInterests: ['Software Development', 'Machine Learning', 'AI'], keywords: ['JavaScript', 'Python', 'React', 'Node.js', 'AI'], keyInformation: 'John Doe is a software developer with 5 years of experience in the tech industry. He is skilled in JavaScript, Python, and React, and has a passion for building scalable and efficient software solutions.' },
+      { id: 10, name: 'Jane Smith', role: 'Data Scientist', avatar: '/user-avatar.png', company: 'Inteleos', location: 'Chicago, IL', department: 'Data Science', industry: 'Technology', personalInterests: ['Coding', 'Reading', 'Writing', 'Traveling'], professionalInterests: ['Software Development', 'Machine Learning', 'AI'], keywords: ['JavaScript', 'Python', 'React', 'Node.js', 'AI'], keyInformation: 'John Doe is a software developer with 5 years of experience in the tech industry. He is skilled in JavaScript, Python, and React, and has a passion for building scalable and efficient software solutions.' },
+      { id: 11, name: 'John Doe', role: 'Developer', avatar: '/user-avatar.png', company: 'Inteleos', location: 'New York, NY', department: 'Engineering', industry: 'Technology', personalInterests: ['Coding', 'Reading', 'Traveling'], professionalInterests: ['Software Development', 'Machine Learning', 'AI'], keywords: ['JavaScript', 'Python', 'React', 'Node.js', 'AI'], keyInformation: 'John Doe is a software developer with 5 years of experience in the tech industry. He is skilled in JavaScript, Python, and React, and has a passion for building scalable and efficient software solutions.' },
       { id: 12, name: 'Jane Doe', role: 'Designer' },
     ],
   });
@@ -65,7 +65,7 @@ export function CopilotFeaturesProvider({ children }: CopilotFeaturesProviderPro
       title: `Hello, ${appState.user.name}!`,
       description: 'Welcome to Customer Support AI!',
       variant: 'default',
-      duration: 3500,
+      duration: 2500,
     });
   }, [appState.user.name]);
   
