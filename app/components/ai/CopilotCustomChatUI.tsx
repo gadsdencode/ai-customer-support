@@ -199,7 +199,7 @@ export function CopilotCustomChatUI() {
         });
         appendMessage(userMessage);
   
-        // Execute actions
+        // Execute actions with proper typing
         await executeAction(
           { type: "processMessage", payload: { message: content } },
           { type: "processMessage", payload: { message: content } }
@@ -216,9 +216,17 @@ export function CopilotCustomChatUI() {
           throw new Error(result?.error || "Message sending failed");
         }
   
-        if (result.data && typeof result.data.response === "string") {
+        // Handle the response data
+        let responseContent = "";
+        if (result.data?.response) {
+          responseContent = result.data.response;
+        } else if (typeof result.data === "string") {
+          responseContent = result.data;
+        }
+  
+        if (responseContent) {
           const responseMessage = new TextMessage({
-            content: result.data.response,
+            content: responseContent,
             role: Role.Assistant,
             id: `msg-${Date.now()}-response`,
           });
@@ -228,6 +236,8 @@ export function CopilotCustomChatUI() {
           setTimeout(() => {
             setResponseRendered(true);
           }, 100);
+        } else {
+          throw new Error("No response content received");
         }
       } catch (error) {
         console.error("Message send failed:", error);
@@ -238,6 +248,8 @@ export function CopilotCustomChatUI() {
         });
         appendMessage(errorMessage);
         setResponseRendered(true);
+      } finally {
+        setIsResponding(false);
       }
     },
     [appendMessage, handleRealtimeAction, executeAction]
