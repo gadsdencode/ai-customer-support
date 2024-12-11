@@ -363,7 +363,7 @@ export function CopilotCustomChatUI() {
     <AgentUIProvider>
       <Card
         ref={chatCardRef}
-        className="w-[90vw] mx-auto h-[90vh] flex flex-col bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl rounded-xl overflow-hidden border border-blue-500/30"
+        className="w-[85vw] mx-auto h-[65vh] flex flex-col bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl rounded-xl overflow-y-auto border border-blue-500/30"
       >
         <CardContent className="flex flex-col h-full p-6">
           <ErrorBoundary>
