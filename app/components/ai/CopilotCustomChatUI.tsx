@@ -199,7 +199,7 @@ export function CopilotCustomChatUI() {
         });
         appendMessage(userMessage);
   
-        // Execute actions with proper typing
+        // Execute actions
         await executeAction(
           { type: "processMessage", payload: { message: content } },
           { type: "processMessage", payload: { message: content } }
@@ -216,20 +216,9 @@ export function CopilotCustomChatUI() {
           throw new Error(result?.error || "Message sending failed");
         }
   
-        // Handle the response data
-        let responseContent = "";
-        if (result.data?.response) {
-          responseContent = result.data.response;
-        } else if (typeof result.data === "string") {
-          responseContent = result.data;
-        } else if (result.data) {
-          // Handle case where response might be directly in data
-          responseContent = JSON.stringify(result.data);
-        }
-
-        if (responseContent && responseContent.trim() !== "") {
+        if (result.data && typeof result.data.response === "string") {
           const responseMessage = new TextMessage({
-            content: responseContent,
+            content: result.data.response,
             role: Role.Assistant,
             id: `msg-${Date.now()}-response`,
           });
@@ -239,9 +228,6 @@ export function CopilotCustomChatUI() {
           setTimeout(() => {
             setResponseRendered(true);
           }, 100);
-        } else {
-          console.error("Response data:", result.data);
-          throw new Error("Invalid or empty response received");
         }
       } catch (error) {
         console.error("Message send failed:", error);
@@ -252,8 +238,6 @@ export function CopilotCustomChatUI() {
         });
         appendMessage(errorMessage);
         setResponseRendered(true);
-      } finally {
-        setIsResponding(false);
       }
     },
     [appendMessage, handleRealtimeAction, executeAction]
@@ -379,7 +363,7 @@ export function CopilotCustomChatUI() {
     <AgentUIProvider>
       <Card
         ref={chatCardRef}
-        className="w-[85vw] mx-auto h-[65vh] flex flex-col bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl rounded-xl overflow-y-auto border border-blue-500/30"
+        className="w-[90vw] mx-auto h-[90vh] flex flex-col bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 shadow-2xl rounded-xl overflow-hidden border border-blue-500/30"
       >
         <CardContent className="flex flex-col h-full p-6">
           <ErrorBoundary>
