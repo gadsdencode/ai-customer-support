@@ -35,7 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         
-        <CopilotKit runtimeUrl="/api/copilotkit">
+        <CopilotKit publicApiKey="ck_pub_0a53e9dafdff2e60eb3838a9bee7eef9">
           <InteleosContextProvider>
             <CopilotFeaturesProvider>
               {children}
