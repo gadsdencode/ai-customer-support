@@ -10,6 +10,10 @@ import { useAgentUIContext } from '@/app/providers/AGUIProvider';
 
 interface WeatherState {
   final_response: WeatherResponse;
+  metadata?: {
+    error?: string;
+    // ... other metadata properties
+  };
 }
 
 const CoAgentStateDisplay: React.FC = () => {
